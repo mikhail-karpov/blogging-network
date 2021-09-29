@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  keycloak:
+    image: jboss/keycloak:15.0.2
+    container_name: keycloak
+#    volumes:
+#      - ./imports/realm-config:/opt/jboss/keycloak/realm-config
+#    command:
+#      [
+#          '-b',
+#          '0.0.0.0',
+#          '-Dkeycloak.migration.action=import',
+#          '-Dkeycloak.migration.provider=dir',
+#          '-Dkeycloak.migration.dir=/opt/jboss/keycloak/realm-config',
+#          '-Dkeycloak.migration.strategy=OVERWRITE_EXISTING',
+#          '-Dkeycloak.profile.feature.upload_scripts=enabled',
+#      ]
+    environment:
+      KEYCLOAK_USER: ${KEYCLOAK_USER}
+      KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - "6379:6379"

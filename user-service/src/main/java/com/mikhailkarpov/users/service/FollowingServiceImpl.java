@@ -1,0 +1,72 @@
+package com.mikhailkarpov.users.service;
+
+import com.mikhailkarpov.users.domain.Following;
+import com.mikhailkarpov.users.domain.FollowingId;
+import com.mikhailkarpov.users.domain.UserProfile;
+import com.mikhailkarpov.users.exception.ResourceAlreadyExistsException;
+import com.mikhailkarpov.users.exception.ResourceNotFoundException;
+import com.mikhailkarpov.users.repository.FollowingRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class FollowingServiceImpl implements FollowingService {
+
+    private final FollowingRepository followingRepository;
+    private final UserService userService;
+
+    @Override
+    @Transactional
+    public void addToFollowers(String userId, String followerId) {
+
+        if (followingRepository.existsById(new FollowingId(followerId, userId))) {
+            String message = String.format("User with id=%s follows user with id=%s", followerId, userId);
+            throw new ResourceAlreadyExistsException(message);
+        }
+
+        UserProfile user = getUserById(userId);
+        UserProfile follower = getUserById(followerId);
+        followingRepository.save(new Following(follower, user));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserProfile> findFollowers(String userId, Pageable pageable) {
+
+        Page<UserProfile> followersPage = followingRepository.findFollowers(userId, pageable);
+        for (UserProfile profile : followersPage.getContent()) {
+            System.out.println(profile);
+        }
+        return followersPage;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserProfile> findFollowings(String userId, Pageable pageable) {
+
+        Page<UserProfile> followingsPage = followingRepository.findFollowings(userId, pageable);
+        for (UserProfile profile : followingsPage.getContent()) {
+            System.out.println(profile);
+        }
+        return followingsPage;
+    }
+
+    @Override
+    public void removeFromFollowers(String userId, String followerId) {
+
+        FollowingId followingId = new FollowingId(followerId, userId);
+        followingRepository.deleteById(followingId);
+    }
+
+    private UserProfile getUserById(String userId) {
+
+        return userService.findById(userId).orElseThrow(() -> {
+            String message = String.format("User with id=%s not found", userId);
+            return new ResourceNotFoundException(message);
+        });
+    }
+}

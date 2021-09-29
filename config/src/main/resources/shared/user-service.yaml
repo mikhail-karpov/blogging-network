@@ -1,0 +1,10 @@
+server:
+  port: 8081
+
+app:
+  keycloak:
+    serverUrl: http://localhost:8080/auth
+    realm: master
+    clientId: user-service
+    adminUsername: admin
+    adminPassword: admin
