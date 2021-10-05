@@ -26,9 +26,6 @@ public class KeycloakConfig {
     private String realm;
 
     @NotBlank
-    private String clientId;
-
-    @NotBlank
     private String adminUsername;
 
     @NotBlank

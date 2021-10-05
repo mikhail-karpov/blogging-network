@@ -24,7 +24,6 @@ public class KeycloakAdminClientImpl implements KeycloakAdminClient {
     }
 
     @Override
-    @Cacheable(value = "userProfile", key = "#userId")
     public UserRepresentation findUserById(String userId) {
 
         return usersResource.get(userId).toRepresentation();

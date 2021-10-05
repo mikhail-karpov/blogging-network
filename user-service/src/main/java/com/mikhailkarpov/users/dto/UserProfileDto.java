@@ -7,8 +7,8 @@ import lombok.Value;
 public class UserProfileDto {
 
     @JsonProperty("userId")
-    private final String id;
+    private String id;
 
     @JsonProperty("username")
-    private final String username;
+    private String username;
 }

@@ -17,7 +17,7 @@ public abstract class AbstractIT {
     static final GenericContainer REDIS;
 
     static {
-        KEYCLOAK = new KeycloakContainer()
+        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
                 .withReuse(true);
 
         REDIS = new GenericContainer("redis")
@@ -32,7 +32,6 @@ public abstract class AbstractIT {
     static void configDatasource(DynamicPropertyRegistry registry) {
         registry.add("app.keycloak.serverUrl", KEYCLOAK::getAuthServerUrl);
         registry.add("app.keycloak.realm", () -> "master");
-        registry.add("app.keycloak.clientId", () -> "admin-cli");
         registry.add("app.keycloak.adminUsername", KEYCLOAK::getAdminUsername);
         registry.add("app.keycloak.adminPassword", KEYCLOAK::getAdminPassword);
     }

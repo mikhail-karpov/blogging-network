@@ -7,6 +7,9 @@ import com.mikhailkarpov.users.service.FollowingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,16 +20,18 @@ public class FollowingController {
     private final UserProfileDtoMapper profileDtoMapper;
 
     @PostMapping("/users/{id}/followers")
-    public void addToFollowers(@PathVariable("id") String userId, @RequestParam String followerId) {
+    @PreAuthorize("#jwt != null")
+    public void follow(@PathVariable("id") String userId, @AuthenticationPrincipal Jwt jwt) {
 
-        //todo extract followerId from JWT
+        String followerId = jwt.getSubject();
         followingService.addToFollowers(userId, followerId);
     }
 
     @DeleteMapping("/users/{id}/followers")
-    public void removeFromFollowers(@PathVariable("id") String userId, @RequestParam String followerId) {
+    @PreAuthorize("#jwt != null")
+    public void unfollow(@PathVariable("id") String userId, @AuthenticationPrincipal Jwt jwt) {
 
-        //todo extract followerId from JWT
+        String followerId = jwt.getSubject();
         followingService.removeFromFollowers(userId, followerId);
     }
 

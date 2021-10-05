@@ -34,7 +34,6 @@ public class FollowingServiceImpl implements FollowingService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Page<UserProfile> findFollowers(String userId, Pageable pageable) {
 
         Page<UserProfile> followersPage = followingRepository.findFollowers(userId, pageable);
@@ -45,7 +44,6 @@ public class FollowingServiceImpl implements FollowingService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Page<UserProfile> findFollowings(String userId, Pageable pageable) {
 
         Page<UserProfile> followingsPage = followingRepository.findFollowings(userId, pageable);
@@ -56,10 +54,15 @@ public class FollowingServiceImpl implements FollowingService {
     }
 
     @Override
+    @Transactional
     public void removeFromFollowers(String userId, String followerId) {
 
         FollowingId followingId = new FollowingId(followerId, userId);
-        followingRepository.deleteById(followingId);
+        if (followingRepository.existsById(followingId)) {
+            followingRepository.deleteById(followingId);
+        } else {
+            throw new ResourceNotFoundException("Following not found");
+        }
     }
 
     private UserProfile getUserById(String userId) {

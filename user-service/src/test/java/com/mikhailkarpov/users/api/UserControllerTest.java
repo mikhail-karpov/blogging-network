@@ -1,6 +1,5 @@
 package com.mikhailkarpov.users.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mikhailkarpov.users.domain.UserProfile;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.dto.UserProfileDtoMapper;
@@ -12,10 +11,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -28,19 +26,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = UserController.class)
-class UserControllerTest {
+class UserControllerTest extends AbstractControllerTest {
 
     @MockBean
     private UserService userService;
 
     @MockBean
     private UserProfileDtoMapper profileDtoMapper;
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     private final UserRegistrationRequest request =
             new UserRegistrationRequest("username", "user@example.com", "password");
@@ -60,7 +52,7 @@ class UserControllerTest {
         when(userService.create(request)).thenReturn(profile);
 
         //when
-        mockMvc.perform(post("/users")
+        mockMvc.perform(post("/users/registration")
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -74,7 +66,7 @@ class UserControllerTest {
     @MethodSource("getInvalidRequests")
     void testCreateUserValidation(UserRegistrationRequest request) throws Exception {
         //when
-        mockMvc.perform(post("/users")
+        mockMvc.perform(post("/users/registration")
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -90,6 +82,7 @@ class UserControllerTest {
     }
 
     @Test
+    @WithMockUser
     void givenUser_whenGetUserById_thenOk() throws Exception {
         //given
         String userId = profile.getId();
@@ -103,6 +96,7 @@ class UserControllerTest {
     }
 
     @Test
+    @WithMockUser
     void givenNoUser_whenGetUserById_thenNotFound() throws Exception {
         //given
         String userId = UUID.randomUUID().toString();
@@ -111,5 +105,16 @@ class UserControllerTest {
         //when
         mockMvc.perform(get("/users/{id}", userId))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void givenNoAuth_whenGetUserById_thenUnauthorized() throws Exception {
+        //given
+        String userId = profile.getId();
+        when(userService.findById(userId)).thenReturn(Optional.of(profile));
+
+        //when
+        mockMvc.perform(get("/users/{id}", userId))
+                .andExpect(status().isUnauthorized());
     }
 }
