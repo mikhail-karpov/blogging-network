@@ -1,10 +1,13 @@
 package com.mikhailkarpov.users.api;
 
+import com.mikhailkarpov.users.config.AbstractIT;
 import com.mikhailkarpov.users.dto.PagedResult;
+import com.mikhailkarpov.users.dto.UserAuthenticationRequest;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.dto.UserRegistrationRequest;
 import com.mikhailkarpov.users.util.DtoUtils;
 import org.junit.jupiter.api.Test;
+import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -21,7 +24,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class FollowingControllerIT extends AbstractControllerIT {
+class FollowingControllerIT extends AbstractIT {
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -37,6 +40,22 @@ class FollowingControllerIT extends AbstractControllerIT {
     private UserProfileDto createUser(UserRegistrationRequest request) {
 
         return restTemplate.postForObject("/users/registration", request, UserProfileDto.class);
+    }
+
+    private ResponseEntity<AccessTokenResponse> login(String username, String password) {
+        UserAuthenticationRequest request = new UserAuthenticationRequest(username, password);
+        return restTemplate.postForEntity("/users/login", request, AccessTokenResponse.class);
+    }
+
+    private HttpHeaders buildAuthHeader(String username, String password) {
+        UserAuthenticationRequest request = new UserAuthenticationRequest(username, password);
+        AccessTokenResponse accessTokenResponse =
+                restTemplate.postForObject("/users/login", request, AccessTokenResponse.class);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + accessTokenResponse.getToken());
+
+        return headers;
     }
 
     private ResponseEntity<Object> follow(String followerUsername, String followerPassword, String userId) {

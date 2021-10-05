@@ -1,10 +1,12 @@
 package com.mikhailkarpov.users.service;
 
 import com.mikhailkarpov.users.domain.UserProfile;
+import com.mikhailkarpov.users.dto.UserAuthenticationRequest;
 import com.mikhailkarpov.users.dto.UserRegistrationRequest;
 import com.mikhailkarpov.users.exception.ResourceAlreadyExistsException;
 import com.mikhailkarpov.users.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
+import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.cache.annotation.CachePut;
@@ -22,6 +24,11 @@ public class UserServiceImpl implements UserService {
     private final UserProfileRepository userProfileRepository;
     private final KeycloakAdminClient keycloakAdminClient;
     public static final String USER_PROFILE_CACHE = "userProfile";
+
+    @Override
+    public AccessTokenResponse authenticate(UserAuthenticationRequest request) {
+        return keycloakAdminClient.obtainAccessToken(request.getUsername(), request.getPassword());
+    }
 
     @Override
     @CachePut(value = USER_PROFILE_CACHE, key = "#result.id")

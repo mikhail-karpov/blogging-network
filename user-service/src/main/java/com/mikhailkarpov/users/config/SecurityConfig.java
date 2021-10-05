@@ -19,6 +19,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .csrf().disable()
             .authorizeRequests(auth -> auth
                     .antMatchers("/users/registration/**").permitAll()
+                    .antMatchers("/users/login/**").permitAll()
                     .anyRequest().authenticated())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt());
         //@formatter:on
