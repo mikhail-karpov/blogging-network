@@ -11,6 +11,7 @@
 
     <modules>
         <module>config</module>
+        <module>service-discovery</module>
         <module>user-service</module>
     </modules>
 

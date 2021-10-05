@@ -8,6 +8,17 @@ services:
       - "8888:8888"
     restart: unless-stopped
 
+  service-discovery:
+    build: ./service-discovery
+    container_name: service-discovery
+    depends_on:
+      - config
+    environment:
+      - SPRING_CONFIG_IMPORT=configserver:http://config:8888
+    ports:
+      - "8761:8761"
+    restart: unless-stopped
+
   keycloak:
     image: jboss/keycloak:15.0.2
     container_name: keycloak
@@ -33,5 +44,5 @@ services:
       - config
       - keycloak
     ports:
-      - "8090:8080"
+      - "9000:8080"
     restart: unless-stopped
