@@ -1,6 +1,8 @@
 package com.mikhailkarpov.users.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mikhailkarpov.users.domain.UserProfile;
+import com.mikhailkarpov.users.dto.UserAuthenticationRequest;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.dto.UserProfileDtoMapper;
 import com.mikhailkarpov.users.dto.UserRegistrationRequest;
@@ -11,6 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
+import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -19,6 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -79,6 +83,26 @@ class UserControllerTest extends AbstractControllerTest {
                 Arguments.of(new UserRegistrationRequest("username", "user@example.com", "")),
                 Arguments.of(new UserRegistrationRequest("username", "user", "password"))
         );
+    }
+
+    @Test
+    void givenAuthenticationRequest_whenLogin_thenOk() throws Exception {
+        //given
+        UserAuthenticationRequest request = new UserAuthenticationRequest("username", "password");
+        String token = UUID.randomUUID().toString();
+        AccessTokenResponse response = new AccessTokenResponse();
+        response.setToken(token);
+
+        when(userService.authenticate(request)).thenReturn(response);
+
+        //when
+        mockMvc.perform(post("/users/login")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.access_token").value(token));
+
+        verify(userService).authenticate(request);
     }
 
     @Test

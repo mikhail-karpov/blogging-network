@@ -1,11 +1,13 @@
 package com.mikhailkarpov.users.api;
 
 import com.mikhailkarpov.users.domain.UserProfile;
+import com.mikhailkarpov.users.dto.UserAuthenticationRequest;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.dto.UserProfileDtoMapper;
 import com.mikhailkarpov.users.dto.UserRegistrationRequest;
 import com.mikhailkarpov.users.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -29,6 +31,12 @@ public class UserController {
         URI location = uriComponentsBuilder.path("/users/{id}").build(profile.getId());
 
         return ResponseEntity.created(location).body(profileDtoMapper.map(profile));
+    }
+
+    @PostMapping("/login")
+    public AccessTokenResponse login(@Valid @RequestBody UserAuthenticationRequest request) {
+
+        return userService.authenticate(request);
     }
 
     @GetMapping("/{id}")
