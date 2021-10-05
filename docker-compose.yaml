@@ -1,24 +1,19 @@
 version: "3.8"
 
 services:
+  config:
+    build: ./config
+    container_name: config
+    ports:
+      - "8888:8888"
+    restart: unless-stopped
+
   keycloak:
     image: jboss/keycloak:15.0.2
     container_name: keycloak
-#    volumes:
-#      - ./imports/realm-config:/opt/jboss/keycloak/realm-config
-#    command:
-#      [
-#          '-b',
-#          '0.0.0.0',
-#          '-Dkeycloak.migration.action=import',
-#          '-Dkeycloak.migration.provider=dir',
-#          '-Dkeycloak.migration.dir=/opt/jboss/keycloak/realm-config',
-#          '-Dkeycloak.migration.strategy=OVERWRITE_EXISTING',
-#          '-Dkeycloak.profile.feature.upload_scripts=enabled',
-#      ]
     environment:
-      KEYCLOAK_USER: ${KEYCLOAK_USER}
-      KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
+      - KEYCLOAK_USER=${KEYCLOAK_USER}
+      - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD}
     ports:
       - "8080:8080"
     restart: unless-stopped
@@ -28,3 +23,15 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    environment:
+      - SPRING_CONFIG_IMPORT=configserver:http://config:8888
+    depends_on:
+      - config
+      - keycloak
+    ports:
+      - "8090:8080"
+    restart: unless-stopped
