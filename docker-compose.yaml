@@ -57,3 +57,12 @@ services:
       - service-discovery
       - keycloak
     restart: unless-stopped
+
+  post-service:
+    build: ./post-service
+    container_name: post-service
+    environment:
+      - SPRING_CONFIG_IMPORT=configserver:http://config:8888
+    depends_on:
+      - config
+    restart: unless-stopped
