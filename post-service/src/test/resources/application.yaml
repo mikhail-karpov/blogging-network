@@ -1,0 +1,10 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+  main:
+    allow-bean-definition-overriding: true
+
+eureka:
+  client:
+    enabled: false
