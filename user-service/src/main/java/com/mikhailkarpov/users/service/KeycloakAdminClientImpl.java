@@ -23,9 +23,8 @@ public class KeycloakAdminClientImpl implements KeycloakAdminClient {
     @Override
     public String createUser(UserRepresentation user) {
 
-        try (Response response = usersResource.create(user)) {
-            return CreatedResponseUtil.getCreatedId(response);
-        }
+        Response response = usersResource.create(user);
+        return CreatedResponseUtil.getCreatedId(response);
     }
 
     @Override
