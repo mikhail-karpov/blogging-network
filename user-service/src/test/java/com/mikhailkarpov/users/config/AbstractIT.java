@@ -12,16 +12,16 @@ import org.testcontainers.containers.GenericContainer;
 
 public abstract class AbstractIT {
 
-    static final GenericContainer EUREKA;
+//    static final GenericContainer EUREKA;
 
     static final KeycloakContainer KEYCLOAK;
 
     static final GenericContainer REDIS;
 
     static {
-        EUREKA = new GenericContainer("springcloud/eureka")
-                .withExposedPorts(8761)
-                .withReuse(true);
+//        EUREKA = new GenericContainer("springcloud/eureka")
+//                .withExposedPorts(8761)
+//                .withReuse(true);
 
         KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
                 .withReuse(true);
@@ -30,19 +30,19 @@ public abstract class AbstractIT {
                 .withExposedPorts(6379)
                 .withReuse(true);
 
-        EUREKA.start();
+//        EUREKA.start();
         KEYCLOAK.start();
         REDIS.start();
     }
 
-    @DynamicPropertySource
-    static void configureEureka(DynamicPropertyRegistry registry) {
-        registry.add("eureka.client.serviceUrl.defaultZone", AbstractIT::eurekaDefaultZone);
-    }
+//    @DynamicPropertySource
+//    static void configureEureka(DynamicPropertyRegistry registry) {
+//        registry.add("eureka.client.serviceUrl.defaultZone", AbstractIT::eurekaDefaultZone);
+//    }
 
-    static String eurekaDefaultZone() {
-        return String.format("%s:%d/eureka/", EUREKA.getHost(), EUREKA.getFirstMappedPort());
-    }
+//    static String eurekaDefaultZone() {
+//        return String.format("%s:%d/eureka/", EUREKA.getHost(), EUREKA.getFirstMappedPort());
+//    }
 
     @DynamicPropertySource
     static void configDatasource(DynamicPropertyRegistry registry) {

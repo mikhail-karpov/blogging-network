@@ -37,9 +37,6 @@ public class FollowingServiceImpl implements FollowingService {
     public Page<UserProfile> findFollowers(String userId, Pageable pageable) {
 
         Page<UserProfile> followersPage = followingRepository.findFollowers(userId, pageable);
-        for (UserProfile profile : followersPage.getContent()) {
-            System.out.println(profile);
-        }
         return followersPage;
     }
 
@@ -47,9 +44,6 @@ public class FollowingServiceImpl implements FollowingService {
     public Page<UserProfile> findFollowings(String userId, Pageable pageable) {
 
         Page<UserProfile> followingsPage = followingRepository.findFollowings(userId, pageable);
-        for (UserProfile profile : followingsPage.getContent()) {
-            System.out.println(profile);
-        }
         return followingsPage;
     }
 
