@@ -17,7 +17,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-class PostRepositoryIT {
+class PostRepositoryTest {
 
     @Autowired
     private TestEntityManager entityManager;
