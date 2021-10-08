@@ -2,4 +2,8 @@ spring:
   application:
     name: post-service
   config:
+<<<<<<< HEAD
     import: configserver:${CONFIG_URI:http://localhost:8888}
+=======
+    import: optional:configserver:http://localhost:8888
+>>>>>>> 93cf52c6af9dc9fa52786c7f95367772952655ea
