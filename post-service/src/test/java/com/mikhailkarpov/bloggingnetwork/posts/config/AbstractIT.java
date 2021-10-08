@@ -1,31 +1,29 @@
 package com.mikhailkarpov.bloggingnetwork.posts.config;
 
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
+import dasniko.testcontainers.keycloak.KeycloakContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.GenericContainer;
 
 public abstract class AbstractIT {
 
-    static GenericContainer EUREKA;
+    static final KeycloakContainer KEYCLOAK;
 
     static {
-        EUREKA = new GenericContainer("springcloud/eureka")
-                .withExposedPorts(8761)
+        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
                 .withReuse(true);
 
-        EUREKA.start();
+        KEYCLOAK.start();
     }
 
     @DynamicPropertySource
-    static void configureEureka(DynamicPropertyRegistry registry) {
-        registry.add("eureka.client.serviceUrl.defaultZone", AbstractIT::eurekaDefaultZone);
-    }
-
-    private static String eurekaDefaultZone() {
-        return String.format("%s:%d/eureka/", EUREKA.getHost(), EUREKA.getFirstMappedPort());
+    static void configDatasource(DynamicPropertyRegistry registry) {
+        registry.add("app.keycloak.serverUrl", KEYCLOAK::getAuthServerUrl);
+        registry.add("app.keycloak.realm", () -> "master");
+        registry.add("app.keycloak.user", KEYCLOAK::getAdminUsername);
+        registry.add("app.keycloak.password", KEYCLOAK::getAdminPassword);
     }
 
     @Autowired

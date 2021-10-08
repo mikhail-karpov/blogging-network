@@ -1,31 +1,27 @@
 package com.mikhailkarpov.bloggingnetwork.posts.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mikhailkarpov.bloggingnetwork.posts.config.TestSecurityConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.CreatePostRequest;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PagedResult;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PostDto;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.mapper.DtoMapper;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.mapper.PostDtoMapper;
 import com.mikhailkarpov.bloggingnetwork.posts.service.PostService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
 import java.util.Collections;
@@ -35,36 +31,16 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
-@WebMvcTest(controllers = PostController.class)
-@Import(PostControllerTest.PostControllerTestConfig.class)
+@WebMvcTest(PostController.class)
 @AutoConfigureJsonTesters
-class PostControllerTest {
-
-    @TestConfiguration
-    static class PostControllerTestConfig {
-
-        @Bean
-        public PostDtoMapper postDtoMapper() {
-            return new PostDtoMapper();
-        }
-    }
-
-    @Autowired
-    private MockMvc mockMvc;
+class PostControllerTest extends AbstractControllerTest {
 
     @MockBean
-    private PostService postService;
-
-    @Autowired
-    private DtoMapper<Post, PostDto> postDtoMapper;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    PostService postService;
 
     @Autowired
     private JacksonTester<PostDto> dtoJacksonTester;
@@ -72,11 +48,15 @@ class PostControllerTest {
     @Autowired
     private JacksonTester<PagedResult<PostDto>> pagedDtoJacksonTester;
 
+    @Captor
+    private ArgumentCaptor<Post> postArgumentCaptor;
+
+    private final String userId = TestSecurityConfig.SUBJECT;
     private final CreatePostRequest request = new CreatePostRequest(RandomStringUtils.randomAlphabetic(10));
-    private final Post post = new Post(UUID.randomUUID().toString(), request.getContent());
+    private final Post post = new Post(userId, request.getContent());
     private final PostDto postDto = PostDto.builder()
             .id(post.getId().toString())
-            .userId(post.getUserId())
+            .userId(userId)
             .content(post.getContent())
             .createdDate(post.getCreatedDate())
             .build();
@@ -93,6 +73,7 @@ class PostControllerTest {
 
         //when
         MockHttpServletResponse response = mockMvc.perform(post("/posts")
+                        .header("Authorization", "Bearer token")
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andReturn()
@@ -102,7 +83,12 @@ class PostControllerTest {
         assertThat(response.getStatus()).isEqualTo(201);
         assertThat(response.getHeader("Location")).isEqualTo("http://localhost/posts/" + postDto.getId());
         assertThat(response.getContentAsString()).isEqualTo(dtoJacksonTester.write(postDto).getJson());
-        verify(postService).save(any());
+
+        verify(postService).save(postArgumentCaptor.capture());
+        Post captorValue = postArgumentCaptor.getValue();
+        assertThat(captorValue).isNotNull();
+        assertThat(captorValue.getUserId()).isEqualTo(userId);
+        assertThat(captorValue.getContent()).isEqualTo(request.getContent());
     }
 
     @ParameterizedTest
@@ -111,6 +97,7 @@ class PostControllerTest {
     void givenNotValidRequest_whenCreatePost_thenBadRequest(CreatePostRequest request) throws Exception {
         //when
         MockHttpServletResponse response = mockMvc.perform(post("/posts")
+                        .header("Authorization", "Bearer token")
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andReturn()
@@ -118,6 +105,7 @@ class PostControllerTest {
 
         //then
         assertThat(response.getStatus()).isEqualTo(400);
+        verifyNoInteractions(postService);
     }
 
     private static Stream<Arguments> getInvalidRequests() {
@@ -135,7 +123,8 @@ class PostControllerTest {
         when(postService.findAll(pageRequest)).thenReturn(postPage);
 
         //when
-        MockHttpServletResponse response = mockMvc.perform(get("/posts?page=1&size=5"))
+        MockHttpServletResponse response = mockMvc.perform(get("/posts?page=1&size=5")
+                        .header("Authorization", "Bearer token"))
                 .andReturn()
                 .getResponse();
 
@@ -152,7 +141,8 @@ class PostControllerTest {
         when(postService.findById(postId, false)).thenReturn(Optional.of(post));
 
         //when
-        MockHttpServletResponse response = mockMvc.perform(get("/posts/{id}", postId))
+        MockHttpServletResponse response = mockMvc.perform(get("/posts/{id}", postId)
+                        .header("Authorization", "Bearer token"))
                 .andReturn()
                 .getResponse();
 
@@ -169,7 +159,8 @@ class PostControllerTest {
         when(postService.findById(postId)).thenReturn(Optional.empty());
 
         //when
-        MockHttpServletResponse response = mockMvc.perform(get("/posts/{id}", postId))
+        MockHttpServletResponse response = mockMvc.perform(get("/posts/{id}", postId)
+                        .header("Authorization", "Bearer token"))
                 .andReturn()
                 .getResponse();
 
@@ -185,7 +176,9 @@ class PostControllerTest {
         when(postService.findAllByUserId(userId, pageRequest)).thenReturn(postPage);
 
         //when
-        MockHttpServletResponse response = mockMvc.perform(get("/posts/users/{id}?page=1&size=5", userId))
+        String url = "/posts/users/{id}?page=1&size=5";
+        MockHttpServletResponse response = mockMvc.perform(get(url, userId)
+                        .header("Authorization", "Bearer token"))
                 .andReturn()
                 .getResponse();
 
@@ -196,18 +189,40 @@ class PostControllerTest {
     }
 
     @Test
-    void testDeletePostById() throws Exception {
+    void givenPost_whenDeletePostById_thenNoContent() throws Exception {
         //given
-        String postId = UUID.randomUUID().toString();
+        UUID postId = post.getId();
+        when(postService.findById(postId, false)).thenReturn(Optional.of(post));
 
         //when
-        MockHttpServletResponse response = mockMvc.perform(delete("/posts/{id}", postId))
+        MockHttpServletResponse response = mockMvc.perform(delete("/posts/{id}", postId)
+                        .header("Authorization", "Bearer token"))
                 .andReturn()
                 .getResponse();
 
         //then
         assertThat(response.getStatus()).isEqualTo(204);
         assertThat(response.getContentAsString()).isEmpty();
-        verify(postService).deleteById(UUID.fromString(postId));
+        verify(postService).findById(postId, false);
+        verify(postService).deleteById(postId);
+    }
+
+    @Test
+    void givenNoPost_whenDeletePostById_thenNotFound() throws Exception {
+        //given
+        UUID postId = post.getId();
+        when(postService.findById(postId, false)).thenReturn(Optional.empty());
+
+        //when
+        MockHttpServletResponse response = mockMvc.perform(delete("/posts/{id}", postId)
+                        .header("Authorization", "Bearer token"))
+                .andReturn()
+                .getResponse();
+
+        //then
+        assertThat(response.getStatus()).isEqualTo(404);
+        assertThat(response.getContentAsString()).isEmpty();
+        verify(postService).findById(postId, false);
+        verifyNoMoreInteractions(postService);
     }
 }

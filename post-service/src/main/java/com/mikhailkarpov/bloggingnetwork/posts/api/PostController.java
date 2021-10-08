@@ -1,11 +1,10 @@
 package com.mikhailkarpov.bloggingnetwork.posts.api;
 
+import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.CreatePostRequest;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PagedResult;
-import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PostDto;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.mapper.DtoMapper;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.mapper.PostDtoMapper;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
 import com.mikhailkarpov.bloggingnetwork.posts.service.PostService;
 import lombok.RequiredArgsConstructor;
@@ -13,12 +12,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.AuthorizationServiceException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,9 +34,10 @@ public class PostController {
 
     @PostMapping
     public ResponseEntity<PostDto> createPost(@Valid @RequestBody CreatePostRequest request,
-                                              UriComponentsBuilder uriComponentsBuilder) {
+                                              UriComponentsBuilder uriComponentsBuilder,
+                                              @AuthenticationPrincipal Jwt jwt) {
 
-        String userId = UUID.randomUUID().toString(); //todo extract from jwt
+        String userId = jwt.getSubject();
         String content = request.getContent();
         Post post = postService.save(new Post(userId, content));
         PostDto dto = postDtoMapper.map(post);
@@ -53,17 +56,10 @@ public class PostController {
     }
 
     @GetMapping("/{id}")
-    public PostDto findById(@PathVariable("id") String postId) {
+    public PostDto findById(@PathVariable("id") UUID postId) {
 
-        try {
-            UUID uuid = UUID.fromString(postId);
-            Optional<Post> post = postService.findById(uuid, false);
-            return postDtoMapper.map(post.get());
-
-        } catch (IllegalArgumentException | NoSuchElementException e) {
-            String message = String.format("Post with id='%s' not found", postId);
-            throw new ResourceNotFoundException(message);
-        }
+        Post post = findPost(postId);
+        return postDtoMapper.map(post);
     }
 
     @GetMapping("/users/{id}")
@@ -77,15 +73,21 @@ public class PostController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletePostById(@PathVariable("id") String postId) {
+    public void deletePostById(@PathVariable("id") UUID postId, @AuthenticationPrincipal Jwt jwt) {
 
-        try {
-            UUID uuid = UUID.fromString(postId);
-            postService.deleteById(uuid);
-
-        } catch (IllegalArgumentException e) {
-            String message = String.format("Post with id='%s' not found", postId);
-            throw new ResourceNotFoundException(message);
+        Post post = findPost(postId);
+        if (!jwt.getSubject().equals(post.getUserId())) {
+            throw new AccessDeniedException("Forbidden to delete post");
         }
+
+        postService.deleteById(postId);
+    }
+
+    private Post findPost(UUID postId) {
+
+        return postService.findById(postId, false).orElseThrow(() -> {
+            String message = String.format("Post with id='%s' not found", postId);
+            return new ResourceNotFoundException(message);
+        });
     }
 }

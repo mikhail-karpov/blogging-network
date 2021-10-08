@@ -28,37 +28,51 @@ class PostCommentControllerIT extends AbstractControllerIT {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    private String accessToken;
     private String postId;
+
+    @BeforeEach
+    void obtainAccessToken() {
+        this.accessToken = oAuth2Client.obtainAccessToken(oAuth2User);
+    }
 
     @BeforeEach
     void createPost() {
         CreatePostRequest request = new CreatePostRequest("Post content");
-        ResponseEntity<PostDto> createPostResponse = createPost(restTemplate, request);
+        ResponseEntity<PostDto> createPostResponse = createPost(accessToken, restTemplate, request);
         postId = createPostResponse.getBody().getId();
     }
 
     private ResponseEntity<PostCommentDto> addComment(String postId, CreatePostCommentRequest request) {
-        HttpEntity<CreatePostCommentRequest> requestEntity = new HttpEntity<>(request, new HttpHeaders());
         String url = "/posts/{id}/comments";
-        return restTemplate.exchange(url, POST, requestEntity, PostCommentDto.class, postId);
+        HttpHeaders headers = buildAuthorizationHeaders(accessToken);
+
+        return restTemplate.exchange(url, POST, new HttpEntity<>(request, headers), PostCommentDto.class, postId);
     }
 
     private ResponseEntity<Object> removeComment(String postId, String commentId) {
         String url = "/posts/{postId}/comments/{commentId}";
-        return restTemplate.exchange(url, DELETE, null, Object.class, postId, commentId);
+        HttpHeaders headers = buildAuthorizationHeaders(accessToken);
+
+        return restTemplate.exchange(url, DELETE, new HttpEntity<>(headers), Object.class, postId, commentId);
     }
 
     private ResponseEntity<PostCommentDto> getCommentById(String postId, String commentId) {
         String url = "/posts/{postId}/comments/{commentId}";
-        return restTemplate.exchange(url, GET, null, PostCommentDto.class, postId, commentId);
+        HttpHeaders headers = buildAuthorizationHeaders(accessToken);
+
+        return restTemplate.exchange(url, GET, new HttpEntity<>(headers), PostCommentDto.class, postId, commentId);
     }
 
     private ResponseEntity<PagedResult<PostCommentDto>> getCommentsByPostId(String postId, int page, int size) {
         ParameterizedTypeReference<PagedResult<PostCommentDto>> typeRef =
                 new ParameterizedTypeReference<PagedResult<PostCommentDto>>() {
                 };
+
         String url = "/posts/{id}/comments?page={page}&size={size}";
-        return restTemplate.exchange(url, GET, null, typeRef, postId, page, size);
+        HttpHeaders headers = buildAuthorizationHeaders(accessToken);
+
+        return restTemplate.exchange(url, GET, new HttpEntity<>(headers), typeRef, postId, page, size);
     }
 
     @Test

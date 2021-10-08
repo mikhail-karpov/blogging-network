@@ -50,6 +50,10 @@ public abstract class AuthorEntity {
         return createdDate;
     }
 
+    public boolean isOwnedBy(String userId) {
+        return this.userId.equals(userId);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

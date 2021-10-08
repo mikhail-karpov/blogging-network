@@ -1,6 +1,4 @@
 app:
   keycloak:
-    serverUrl: http://keycloak:8080/auth
-    realm: master
     adminUsername: admin
     adminPassword: admin
