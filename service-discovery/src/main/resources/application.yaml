@@ -1,13 +1,8 @@
+server:
+  port: 8761
+
 spring:
   application:
     name: service-discovery
   config:
-    import: optional:configserver:${CONFIG_URI:http://localhost:8888}
-
-server:
-  port: 8761
-
-eureka:
-  client:
-    registerWithEureka: false
-    fetchRegistry: false
+    import: configserver:${CONFIG_URI:http://localhost:8888}
