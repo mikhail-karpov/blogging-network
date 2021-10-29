@@ -5,11 +5,13 @@ import com.mikhailkarpov.users.dto.PagedResult;
 import com.mikhailkarpov.users.dto.UserAuthenticationRequest;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.dto.UserRegistrationRequest;
+import com.mikhailkarpov.users.messaging.FollowingEventPublisher;
 import com.mikhailkarpov.users.util.DtoUtils;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -25,6 +27,9 @@ import static org.springframework.http.HttpStatus.OK;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class FollowingControllerIT extends AbstractIT {
+
+    @MockBean
+    private FollowingEventPublisher eventPublisher;
 
     @Autowired
     private TestRestTemplate restTemplate;
