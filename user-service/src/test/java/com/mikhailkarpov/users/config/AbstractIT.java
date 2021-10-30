@@ -1,17 +1,11 @@
 package com.mikhailkarpov.users.config;
 
-import com.mikhailkarpov.users.repository.FollowingRepository;
-import com.mikhailkarpov.users.repository.UserProfileRepository;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 
-@Slf4j
 public abstract class AbstractIT {
 
     static final KeycloakContainer KEYCLOAK;
@@ -43,30 +37,5 @@ public abstract class AbstractIT {
         registry.add("spring.redis.host", REDIS::getHost);
         registry.add("spring.redis.port", REDIS::getFirstMappedPort);
         registry.add("spring.cache.type", () -> "redis");
-    }
-
-    @Autowired
-    private UserProfileRepository userProfileRepository;
-
-    @Autowired
-    private FollowingRepository followingRepository;
-
-    @BeforeEach
-    void clearRepository() {
-        userProfileRepository.deleteAll();
-        followingRepository.deleteAll();
-        log.info("Repositories cleared up");
-    }
-
-    @Autowired
-    private CacheManager cacheManager;
-
-    @BeforeEach
-    void clearCache() {
-
-        cacheManager.getCacheNames().forEach(cache -> {
-            cacheManager.getCache(cache).invalidate();
-            log.info("Cache {} invalidated", cache);
-        });
     }
 }

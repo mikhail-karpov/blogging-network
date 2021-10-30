@@ -2,7 +2,6 @@ package com.mikhailkarpov.users.api;
 
 import com.mikhailkarpov.users.dto.PagedResult;
 import com.mikhailkarpov.users.dto.UserProfileDto;
-import com.mikhailkarpov.users.dto.UserProfileDtoMapper;
 import com.mikhailkarpov.users.service.FollowingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 public class FollowingController {
 
     private final FollowingService followingService;
-    private final UserProfileDtoMapper profileDtoMapper;
 
     @PostMapping("/users/{id}/followers")
     @PreAuthorize("#jwt != null")
@@ -39,7 +37,7 @@ public class FollowingController {
     public PagedResult<UserProfileDto> getFollowers(@PathVariable("id") String userId, Pageable pageable) {
 
         Page<UserProfileDto> followersPage = followingService.findFollowers(userId, pageable)
-                .map(profileDtoMapper::map);
+                .map(UserProfileDto::from);
 
         return new PagedResult<>(followersPage);
     }
@@ -48,7 +46,7 @@ public class FollowingController {
     public PagedResult<UserProfileDto> getFollowings(@PathVariable("id") String userId, Pageable pageable) {
 
         Page<UserProfileDto> followingsPage = followingService.findFollowings(userId, pageable)
-                .map(profileDtoMapper::map);
+                .map(UserProfileDto::from);
 
         return new PagedResult<>(followingsPage);
     }

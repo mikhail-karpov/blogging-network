@@ -1,7 +1,7 @@
 package com.mikhailkarpov.users.contract;
 
 import com.mikhailkarpov.users.api.FollowingController;
-import com.mikhailkarpov.users.api.UserController;
+import com.mikhailkarpov.users.api.AccountController;
 import com.mikhailkarpov.users.config.AbstractIT;
 import com.mikhailkarpov.users.messaging.FollowingEvent;
 import com.mikhailkarpov.users.messaging.FollowingEventPublisher;
@@ -40,7 +40,7 @@ public class ContractTestBaseClass extends AbstractIT {
     }
 
     @Autowired
-    private UserController userController;
+    private AccountController accountController;
 
     @Autowired
     private FollowingController followingController;
@@ -50,7 +50,7 @@ public class ContractTestBaseClass extends AbstractIT {
 
     @BeforeEach
     void setUp() {
-        StandaloneMockMvcBuilder builder = MockMvcBuilders.standaloneSetup(userController, followingController);
+        StandaloneMockMvcBuilder builder = MockMvcBuilders.standaloneSetup(accountController, followingController);
         RestAssuredMockMvc.standaloneSetup(builder);
     }
 

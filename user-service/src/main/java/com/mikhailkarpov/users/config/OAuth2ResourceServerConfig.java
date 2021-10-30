@@ -11,7 +11,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoders;
 
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
+public class OAuth2ResourceServerConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -23,8 +23,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
             .authorizeRequests(auth -> auth
-                    .antMatchers("/users/registration/**").permitAll()
-                    .antMatchers("/users/login/**").permitAll()
+                    .antMatchers("/account/registration/**").permitAll()
+                    .antMatchers("/account/login/**").permitAll()
                     .anyRequest().authenticated())
             .oauth2ResourceServer()
                 .jwt();
