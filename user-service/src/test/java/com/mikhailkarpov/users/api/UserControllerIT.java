@@ -1,7 +1,6 @@
 package com.mikhailkarpov.users.api;
 
 import com.mikhailkarpov.users.dto.UserProfileDto;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpEntity;
@@ -20,7 +19,7 @@ class UserControllerIT extends AbstractControllerIT {
         //given
         String username = RandomStringUtils.randomAlphabetic(15);
         String email = username + "@example.com";
-        String password = "pass";
+        String password = "password";
 
         //when
         UserProfileDto user = registerUser(username, email, password);
