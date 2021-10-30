@@ -5,6 +5,10 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
+            - Path=/account/**
+        - id: user-service
+          uri: lb://user-service
+          predicates:
             - Path=/users/**
         - id: post-service
           uri: lb://post-service
