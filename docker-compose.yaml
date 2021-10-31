@@ -47,6 +47,13 @@ services:
     ports:
       - "6379:6379"
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
   user-service:
     build: ./user-service
     container_name: user-service
@@ -54,8 +61,9 @@ services:
       - CONFIG_URI=http://config:8888
     depends_on:
       - config
-      - service-discovery
       - keycloak
+      - redis
+      - rabbitmq
     restart: unless-stopped
 
   post-service:
@@ -65,4 +73,6 @@ services:
       - CONFIG_URI=http://config:8888
     depends_on:
       - config
+      - keycloak
+      - rabbitmq
     restart: unless-stopped
