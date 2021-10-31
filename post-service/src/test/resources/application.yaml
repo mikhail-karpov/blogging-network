@@ -8,3 +8,11 @@ spring:
 eureka:
   client:
     enabled: false
+
+app:
+  messaging:
+    posts:
+      topicExchange: posts
+      post-created-routing-key: post.created
+      post-deleted-routingKey: post.deleted
+      post-event-queue: post-event-queue

@@ -2,132 +2,150 @@ package com.mikhailkarpov.bloggingnetwork.posts.service;
 
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.EventStatus;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEvent;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEventPublisher;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
-import org.mockito.Mockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.Mock;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 class PostServiceImplTest {
 
-    @MockBean
+    @Mock
     private PostRepository postRepository;
 
+    @Mock
+    private PostEventPublisher eventPublisher;
+
+    @InjectMocks
     private PostServiceImpl postService;
 
-    private final PageRequest pageRequest = PageRequest.of(1, 3);
+    @Captor
+    private ArgumentCaptor<PostEvent> eventArgumentCaptor;
 
-    @BeforeEach
-    void setUpPostService() {
-        this.postService = new PostServiceImpl(postRepository);
-    }
+    private final Post post = new Post("user", "content");
+    private final UUID postId = post.getId();
+    private final PageRequest pageRequest = PageRequest.of(1, 3);
+    private final PageImpl<Post> postPage =
+            new PageImpl<>(Collections.singletonList(post), pageRequest, 4L);
 
     @Test
     void givenPost_whenDeleteById_thenDelete() {
         //given
-        UUID id = UUID.randomUUID();
-        Post post = mock(Post.class);
-        when(post.getId()).thenReturn(id);
-        when(postRepository.findByIdWithComments(id)).thenReturn(Optional.of(post));
+        when(postRepository.findByIdWithComments(postId)).thenReturn(Optional.of(post));
 
         //when
-        postService.deleteById(id);
+        postService.deleteById(postId);
 
         //then
-        verify(postRepository).findByIdWithComments(id);
-        verify(postRepository).deleteById(id);
+        verify(postRepository).findByIdWithComments(postId);
+        verify(postRepository).delete(post);
+        verify(eventPublisher).publish(eventArgumentCaptor.capture());
+
+        PostEvent event = eventArgumentCaptor.getValue();
+        assertThat(event.getPostId()).isEqualTo(postId.toString());
+        assertThat(event.getAuthorId()).isEqualTo(post.getUserId());
+        assertThat(event.getStatus()).isEqualTo(EventStatus.DELETED);
     }
 
     @Test
     void givenNoPost_whenDeleteById_thenThrows() {
         //given
-        UUID id = UUID.randomUUID();
-        when(postRepository.findByIdWithComments(id)).thenReturn(Optional.empty());
+        when(postRepository.findByIdWithComments(any())).thenReturn(Optional.empty());
 
         //when
+        UUID id = UUID.randomUUID();
         assertThrows(ResourceNotFoundException.class, () -> postService.deleteById(id));
 
         //then
         verify(postRepository).findByIdWithComments(id);
         verifyNoMoreInteractions(postRepository);
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
-    void findAll() {
+    void test_findAll() {
         //given
-        when(postRepository.findAll(pageRequest)).thenReturn(mock(Page.class));
+        when(postRepository.findAll(pageRequest)).thenReturn(postPage);
 
         //when
-        Page<Post> postPage = postService.findAll(pageRequest);
+        Page<Post> foundPage = postService.findAll(pageRequest);
 
         //then
-        verify(postRepository).findAll(pageRequest);
+        Assertions.assertThat(foundPage).usingRecursiveComparison().isEqualTo(postPage);
     }
 
     @Test
-    void findAllByUserId() {
+    void test_findAllByUserId() {
         //given
-        String userId = UUID.randomUUID().toString();
-        when(postRepository.findByUserId(userId, pageRequest)).thenReturn(mock(Page.class));
+        when(postRepository.findByUserId("userId", pageRequest)).thenReturn(postPage);
 
         //when
-        Page<Post> postPage = postService.findAllByUserId(userId, pageRequest);
+        Page<Post> foundPage = postService.findAllByUserId("userId", pageRequest);
 
         //then
-        verify(postRepository).findByUserId(userId, pageRequest);
+        Assertions.assertThat(foundPage).usingRecursiveComparison().isEqualTo(postPage);
     }
 
     @Test
-    void findById() {
+    void test_findById() {
         //given
-        UUID id = UUID.randomUUID();
-        when(postRepository.findById(id)).thenReturn(Optional.of(mock(Post.class)));
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
 
         //when
-        Optional<Post> post = postService.findById(id);
+        Optional<Post> found = postService.findById(postId);
 
         //then
-        verify(postRepository).findById(id);
+        assertThat(found).isPresent();
+        assertThat(found.get()).isEqualTo(post);
     }
 
     @Test
-    void findByIdWithComments() {
+    void test_findByIdWithComments() {
         //given
-        UUID id = UUID.randomUUID();
-        when(postRepository.findByIdWithComments(id)).thenReturn(Optional.of(mock(Post.class)));
+        when(postRepository.findByIdWithComments(postId)).thenReturn(Optional.of(post));
 
         //when
-        Optional<Post> post = postService.findById(id, true);
+        Optional<Post> found = postService.findById(postId, true);
 
         //then
-        verify(postRepository).findByIdWithComments(id);
+        assertThat(found).isPresent();
+        assertThat(found.get()).isEqualTo(post);
     }
 
     @Test
-    void save() {
+    void test_save() {
         //given
-        Post post = mock(Post.class);
         when(postRepository.save(post)).thenReturn(post);
 
         //when
         Post saved = postService.save(post);
 
         //then
-        verify(postRepository).save(post);
+        verify(eventPublisher).publish(eventArgumentCaptor.capture());
+        PostEvent event = eventArgumentCaptor.getValue();
+
+        assertThat(saved).isEqualTo(post);
+        assertThat(event.getPostId()).isEqualTo(postId.toString());
+        assertThat(event.getAuthorId()).isEqualTo(post.getUserId());
+        assertThat(event.getStatus()).isEqualTo(EventStatus.CREATED);
     }
 }
