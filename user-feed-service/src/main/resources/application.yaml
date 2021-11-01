@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: user-feed-service
+  config:
+    import: configserver:${CONFIG_URI:http://localhost:8888}

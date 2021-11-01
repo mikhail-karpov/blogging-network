@@ -76,3 +76,14 @@ services:
       - keycloak
       - rabbitmq
     restart: unless-stopped
+
+  user-feed-service:
+    build: ./user-feed-service
+    container_name: user-feed-service
+    environment:
+      - CONFIG_URI=http://config:8888
+    depends_on:
+      - config
+      - keycloak
+      - rabbitmq
+    restart: unless-stopped
