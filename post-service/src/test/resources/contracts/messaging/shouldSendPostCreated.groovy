@@ -10,6 +10,7 @@ Contract.make {
     outputMessage {
         sentTo 'posts'
         headers {
+            header('contentType', applicationJson())
             header('amqp_receivedRoutingKey', 'post.created')
         }
         body ([

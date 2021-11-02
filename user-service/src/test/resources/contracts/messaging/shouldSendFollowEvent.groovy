@@ -10,6 +10,7 @@ Contract.make {
     outputMessage {
         sentTo 'users'
         headers {
+            header('contentType', applicationJson())
             header('amqp_receivedRoutingKey', 'user.follow')
         }
         body ([
