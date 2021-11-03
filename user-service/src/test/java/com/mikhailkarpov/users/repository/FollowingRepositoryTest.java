@@ -16,7 +16,7 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-class FollowingRepositoryIT {
+class FollowingRepositoryTest {
 
     @Autowired
     private TestEntityManager entityManager;

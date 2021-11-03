@@ -8,6 +8,8 @@ import com.mikhailkarpov.bloggingnetwork.posts.util.EntityUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -26,44 +28,40 @@ import static org.mockito.Mockito.*;
 @ExtendWith(SpringExtension.class)
 class PostCommentServiceImplTest {
 
-    @MockBean
+    @Mock
     private PostService postService;
 
-    @MockBean
+    @Mock
     private PostCommentRepository commentRepository;
 
+    @InjectMocks
     private PostCommentServiceImpl postCommentService;
 
-    @BeforeEach
-    void setUp() {
-        this.postCommentService = new PostCommentServiceImpl(this.postService, this.commentRepository);
-    }
-
     private final Post post = EntityUtils.createRandomPost(35);
+    private final UUID postId = post.getId();
     private final PostComment comment = EntityUtils.createRandomPostComment(25);
+    private final PageRequest pageRequest = PageRequest.of(2, 4);
+    private final Page<PostComment> commentPage =
+            new PageImpl<>(Collections.singletonList(comment), pageRequest, 9L);
 
     @Test
     void givenPost_whenAddComment_thenSaved() {
         //given
-        UUID postId = post.getId();
         when(postService.findById(postId, true)).thenReturn(Optional.of(post));
 
         //when
         PostComment savedComment = postCommentService.addComment(postId, comment);
 
         //then
-        assertThat(savedComment).isNotNull();
-        assertThat(savedComment.getContent()).isEqualTo(comment.getContent());
+        assertThat(savedComment).isEqualTo(comment);
 
         verify(postService).findById(postId, true);
-        verify(postService).save(any());
-        verifyNoInteractions(commentRepository);
+        verify(postService).save(post);
     }
 
     @Test
     void givenNoPost_whenAddComment_thenThrown() {
         //given
-        UUID postId = UUID.randomUUID();
         when(postService.findById(postId, true)).thenReturn(Optional.empty());
 
         //then
@@ -72,25 +70,18 @@ class PostCommentServiceImplTest {
 
         verify(postService).findById(postId, true);
         verifyNoMoreInteractions(postService);
-        verifyNoInteractions(commentRepository);
     }
 
     @Test
     void givenComments_whenFindAllByPostId_thenFound() {
         //given
-        UUID postId = post.getId();
-        PageRequest pageRequest = PageRequest.of(2, 4);
-        Page<PostComment> commentPage = new PageImpl<>(Collections.singletonList(comment), pageRequest, 9L);
         when(commentRepository.findAllByPostId(postId, pageRequest)).thenReturn(commentPage);
 
         //when
         Page<PostComment> foundCommentPage = postCommentService.findAllByPostId(postId, pageRequest);
 
         //then
-        assertThat(foundCommentPage).isNotNull();
         assertThat(foundCommentPage).usingRecursiveComparison().isEqualTo(commentPage);
-        verify(commentRepository).findAllByPostId(postId, pageRequest);
-        verifyNoInteractions(postService);
     }
 
     @Test
@@ -104,14 +95,12 @@ class PostCommentServiceImplTest {
 
         //then
         assertThat(foundComment).isPresent();
-        verify(commentRepository).findById(commentId);
-        verifyNoInteractions(postService);
+        assertThat(foundComment.get()).isEqualTo(comment);
     }
 
     @Test
     void givenComment_whenRemoveComment_thenRemoved() {
         //given
-        UUID postId = post.getId();
         UUID commentId = comment.getId();
 
         //when
@@ -119,6 +108,5 @@ class PostCommentServiceImplTest {
 
         //then
         verify(commentRepository).deleteById(commentId);
-        verifyNoInteractions(postService);
     }
 }

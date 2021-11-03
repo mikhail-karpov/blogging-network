@@ -1,12 +1,8 @@
 package com.mikhailkarpov.users.api;
 
 import com.mikhailkarpov.users.domain.UserProfile;
-import com.mikhailkarpov.users.dto.UserProfileDto;
-import com.mikhailkarpov.users.dto.UserProfileDtoMapper;
 import com.mikhailkarpov.users.service.FollowingService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -14,8 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
@@ -23,21 +19,22 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = FollowingController.class)
-class FollowingControllerTest extends AbstractControllerTest {
+class FollowingControllerTest {
+
+    @MockBean
+    private JwtDecoder jwtDecoder;
+
+    @Autowired
+    private MockMvc mockMvc;
 
     @MockBean
     private FollowingService followingService;
-
-    @MockBean
-    private UserProfileDtoMapper profileDtoMapper;
 
     private final List<UserProfile> profilesList = Arrays.asList(
             new UserProfile(UUID.randomUUID().toString(), "user" + UUID.randomUUID(), "user1@example.com"),
@@ -47,14 +44,6 @@ class FollowingControllerTest extends AbstractControllerTest {
 
     private final Page<UserProfile> profilesPage =
             new PageImpl<>(profilesList, PageRequest.of(1, 3), 6);
-
-    @BeforeEach
-    void setDtoMapper() {
-        for (UserProfile userProfile : profilesList) {
-            UserProfileDto dto = new UserProfileDto(userProfile.getId(), userProfile.getUsername());
-            when(profileDtoMapper.map(userProfile)).thenReturn(dto);
-        }
-    }
 
     @Test
     void givenJwt_whenFollow_thenOk() throws Exception {

@@ -19,6 +19,7 @@ public class PostComment extends AuthorEntity {
     public PostComment(String userId, String content) {
         super(userId);
         this.content = content;
+        this.post = null;
     }
 
     void setPost(Post post) {

@@ -6,3 +6,17 @@ spring:
 eureka:
   client:
     enabled: false
+
+app:
+  keycloak:
+    serverUrl: http://localhost:8090/auth
+    realm: master
+    adminUsername: admin
+    adminPassword: admin
+
+  messaging:
+    users:
+      topic-exchange: users
+      follow-routing-key: user.follow
+      unfollow-routing-key: user.unfollow
+      following-event-queue: following-event-queue

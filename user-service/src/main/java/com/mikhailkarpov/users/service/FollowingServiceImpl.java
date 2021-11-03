@@ -5,6 +5,8 @@ import com.mikhailkarpov.users.domain.FollowingId;
 import com.mikhailkarpov.users.domain.UserProfile;
 import com.mikhailkarpov.users.exception.ResourceAlreadyExistsException;
 import com.mikhailkarpov.users.exception.ResourceNotFoundException;
+import com.mikhailkarpov.users.messaging.FollowingEvent;
+import com.mikhailkarpov.users.messaging.FollowingEventPublisher;
 import com.mikhailkarpov.users.repository.FollowingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -12,12 +14,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.mikhailkarpov.users.messaging.FollowingEvent.Status.FOLLOWED;
+import static com.mikhailkarpov.users.messaging.FollowingEvent.Status.UNFOLLOWED;
+
 @Service
 @RequiredArgsConstructor
 public class FollowingServiceImpl implements FollowingService {
 
     private final FollowingRepository followingRepository;
     private final UserService userService;
+    private final FollowingEventPublisher followingEventPublisher;
 
     @Override
     @Transactional
@@ -31,6 +37,9 @@ public class FollowingServiceImpl implements FollowingService {
         UserProfile user = getUserById(userId);
         UserProfile follower = getUserById(followerId);
         followingRepository.save(new Following(follower, user));
+
+        FollowingEvent event = new FollowingEvent(followerId, userId, FOLLOWED);
+        this.followingEventPublisher.publish(event);
     }
 
     @Override
@@ -54,6 +63,10 @@ public class FollowingServiceImpl implements FollowingService {
         FollowingId followingId = new FollowingId(followerId, userId);
         if (followingRepository.existsById(followingId)) {
             followingRepository.deleteById(followingId);
+
+            FollowingEvent event = new FollowingEvent(followerId, userId, UNFOLLOWED);
+            this.followingEventPublisher.publish(event);
+
         } else {
             throw new ResourceNotFoundException("Following not found");
         }

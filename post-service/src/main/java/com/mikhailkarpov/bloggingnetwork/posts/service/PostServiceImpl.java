@@ -2,6 +2,9 @@ package com.mikhailkarpov.bloggingnetwork.posts.service;
 
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.EventStatus;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEvent;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEventPublisher;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,18 +20,21 @@ import java.util.UUID;
 public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
+    private final PostEventPublisher postEventPublisher;
 
     @Override
     @Transactional
     public void deleteById(UUID postId) {
 
-        Optional<Post> post = findById(postId, true);
-        if (!post.isPresent()) {
+        Post post = findById(postId, true).orElseThrow(() -> {
             String message = String.format("Post with id='%s' not found", postId);
-            throw new ResourceNotFoundException(message);
-        }
+            return new ResourceNotFoundException(message);
+        });
 
-        postRepository.deleteById(post.get().getId());
+        this.postRepository.delete(post);
+
+        PostEvent event = new PostEvent(post.getId().toString(), post.getUserId(), EventStatus.DELETED);
+        this.postEventPublisher.publish(event);
     }
 
     @Override
@@ -58,7 +64,14 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional
     public Post save(Post post) {
-        return postRepository.save(post);
+
+        Post saved = this.postRepository.save(post);
+
+        PostEvent event = new PostEvent(post.getId().toString(), post.getUserId(), EventStatus.CREATED);
+        this.postEventPublisher.publish(event);
+
+        return saved;
     }
 }

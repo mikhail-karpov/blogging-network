@@ -1,28 +1,18 @@
 package com.mikhailkarpov.users.config;
 
-import com.mikhailkarpov.users.repository.FollowingRepository;
-import com.mikhailkarpov.users.repository.UserProfileRepository;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 
 public abstract class AbstractIT {
 
-//    static final GenericContainer EUREKA;
-
     static final KeycloakContainer KEYCLOAK;
 
     static final GenericContainer REDIS;
 
     static {
-//        EUREKA = new GenericContainer("springcloud/eureka")
-//                .withExposedPorts(8761)
-//                .withReuse(true);
-
         KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
                 .withReuse(true);
 
@@ -30,22 +20,12 @@ public abstract class AbstractIT {
                 .withExposedPorts(6379)
                 .withReuse(true);
 
-//        EUREKA.start();
         KEYCLOAK.start();
         REDIS.start();
     }
 
-//    @DynamicPropertySource
-//    static void configureEureka(DynamicPropertyRegistry registry) {
-//        registry.add("eureka.client.serviceUrl.defaultZone", AbstractIT::eurekaDefaultZone);
-//    }
-
-//    static String eurekaDefaultZone() {
-//        return String.format("%s:%d/eureka/", EUREKA.getHost(), EUREKA.getFirstMappedPort());
-//    }
-
     @DynamicPropertySource
-    static void configDatasource(DynamicPropertyRegistry registry) {
+    static void configKeycloak(DynamicPropertyRegistry registry) {
         registry.add("app.keycloak.serverUrl", KEYCLOAK::getAuthServerUrl);
         registry.add("app.keycloak.realm", () -> "master");
         registry.add("app.keycloak.adminUsername", KEYCLOAK::getAdminUsername);
@@ -57,27 +37,5 @@ public abstract class AbstractIT {
         registry.add("spring.redis.host", REDIS::getHost);
         registry.add("spring.redis.port", REDIS::getFirstMappedPort);
         registry.add("spring.cache.type", () -> "redis");
-    }
-
-    @Autowired
-    private UserProfileRepository userProfileRepository;
-
-    @Autowired
-    private FollowingRepository followingRepository;
-
-    @Autowired
-    private CacheManager cacheManager;
-
-    @BeforeEach
-    void clearRepository() {
-
-        userProfileRepository.deleteAll();
-        followingRepository.deleteAll();
-    }
-
-    @BeforeEach
-    void clearCache() {
-
-        cacheManager.getCacheNames().forEach(cache -> cacheManager.getCache(cache).invalidate());
     }
 }

@@ -15,6 +15,7 @@
         <module>api-gateway</module>
         <module>user-service</module>
         <module>post-service</module>
+        <module>user-feed-service</module>
     </modules>
 
 </project>

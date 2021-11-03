@@ -5,8 +5,12 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/users/**
+            - Path=/account/**, /users/**
         - id: post-service
           uri: lb://post-service
           predicates:
             - Path=/posts/**
+        - id: user-feed-service
+          uri: lb://user-feed-service
+          predicates:
+            - Path=/feed/**

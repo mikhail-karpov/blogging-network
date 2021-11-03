@@ -3,7 +3,9 @@ package com.mikhailkarpov.bloggingnetwork.posts.service;
 import com.mikhailkarpov.bloggingnetwork.posts.config.AbstractIT;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.PostComment;
+import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import com.mikhailkarpov.bloggingnetwork.posts.util.EntityUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,31 +25,32 @@ class PostServiceImplIT extends AbstractIT {
     private PostServiceImpl postService;
 
     @Test
-    void givenPost_whenSaveAndFindById_thenFound() {
+    void givenPost_whenSave_thenFound() {
         //given
         Post post = EntityUtils.createRandomPost(30);
 
         //when
         Post savedPost = postService.save(post);
-        Optional<Post> foundPost = postService.findById(post.getId());
 
         //then
-        assertThat(savedPost).isNotNull();
+        Optional<Post> foundPost = postService.findById(post.getId());
+
+        assertThat(savedPost).isEqualTo(savedPost);
         assertThat(foundPost).isPresent();
+        assertThat(foundPost.get()).isEqualTo(post);
     }
 
     @Test
-    void givenPost_whenSaveAndDelete_thenDeleted() {
+    void givenPost_whenSaveAndDelete_thenNotFound() {
         //given
         Post post = EntityUtils.createRandomPost(25);
 
         //when
         postService.save(post);
         postService.deleteById(post.getId());
-        Optional<Post> notFoundPost = postService.findById(post.getId());
 
         //then
-        assertThat(notFoundPost).isEmpty();
+        assertThat(postService.findById(post.getId())).isEmpty();
     }
 
     @Test
