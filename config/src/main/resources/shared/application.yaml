@@ -5,6 +5,11 @@ spring:
   rabbitmq:
     host: rabbitmq
     port: 5672
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak:8080/auth/realms/master
 
 eureka:
   client:

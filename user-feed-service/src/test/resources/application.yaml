@@ -2,25 +2,12 @@ spring:
   cloud:
     config:
       enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://keycloak/auth/realms/master
 
 eureka:
   client:
     enabled: false
-
-app:
-  messaging:
-    users:
-      topic-exchange: users
-      follow-routing-key: user.follow
-      unfollow-routing-key: user.unfollow
-      following-event-queue: following-event-queue
-    posts:
-      topic-exchange: posts
-      post-created-routing-key: post.created
-      post-deleted-routingKey: post.deleted
-      post-event-queue: post-event-queue
-
-stubrunner:
-  amqp:
-    enabled: true
-    mockConnection: false

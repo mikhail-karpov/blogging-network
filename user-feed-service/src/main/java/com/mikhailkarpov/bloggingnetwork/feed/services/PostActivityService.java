@@ -1,18 +1,13 @@
 package com.mikhailkarpov.bloggingnetwork.feed.services;
 
 import com.mikhailkarpov.bloggingnetwork.feed.domain.PostActivity;
-import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Pageable;
 
-@Service
-public class PostActivityService implements ActivityService<PostActivity> {
+public interface PostActivityService {
 
-    @Override
-    public void saveActivity(PostActivity activity) {
+    void save(PostActivity activity);
 
-    }
+    void delete(PostActivity activity);
 
-    @Override
-    public void deleteActivity(PostActivity activity) {
-
-    }
+    Iterable<PostActivity> getFeed(String userId, Pageable pageable);
 }

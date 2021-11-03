@@ -1,48 +1,30 @@
-package com.mikhailkarpov.bloggingnetwork.feed.config;
+package com.mikhailkarpov.bloggingnetwork.feed.config.messaging;
 
-import com.mikhailkarpov.bloggingnetwork.feed.domain.FollowingActivity;
 import com.mikhailkarpov.bloggingnetwork.feed.messaging.FollowingEventListener;
-import com.mikhailkarpov.bloggingnetwork.feed.services.ActivityService;
-import lombok.Getter;
-import lombok.Setter;
+import com.mikhailkarpov.bloggingnetwork.feed.services.FollowingActivityService;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.validation.annotation.Validated;
-
-import javax.validation.constraints.NotBlank;
 
 @Configuration
-@Validated
-@ConfigurationProperties(prefix = "app.messaging.users")
-@Getter
-@Setter
 public class FollowingEventListenerConfig {
 
-    @NotBlank
-    private String topicExchange;
-
-    @NotBlank
-    public static String followingEventQueue;
-
-    @NotBlank
-    private String followRoutingKey;
-
-    @NotBlank
-    private String unfollowRoutingKey;
+    public static final String TOPIC_EXCHANGE = "users";
+    public static final String FOLLOWING_EVENT_QUEUE = "following-event-queue";
+    public static final String FOLLOW_ROUTING_KEY = "user.follow";
+    public static final String UNFOLLOW_ROUTING_KEY = "user.unfollow";
 
     @Bean
     public TopicExchange usersTopicExchange() {
-        return new TopicExchange(this.topicExchange);
+        return new TopicExchange(TOPIC_EXCHANGE);
     }
 
     @Bean
     public Queue followingEventQueue() {
-        return new Queue(this.followingEventQueue);
+        return new Queue(FOLLOWING_EVENT_QUEUE);
     }
 
     @Bean
@@ -50,7 +32,7 @@ public class FollowingEventListenerConfig {
         return BindingBuilder
                 .bind(followingEventQueue)
                 .to(usersTopicExchange)
-                .with(this.followRoutingKey);
+                .with(FOLLOW_ROUTING_KEY);
     }
 
     @Bean
@@ -58,11 +40,11 @@ public class FollowingEventListenerConfig {
         return BindingBuilder
                 .bind(followingEventQueue)
                 .to(usersTopicExchange)
-                .with(this.unfollowRoutingKey);
+                .with(UNFOLLOW_ROUTING_KEY);
     }
 
     @Bean
-    public FollowingEventListener followingEventListener(ActivityService<FollowingActivity> activityService) {
+    public FollowingEventListener followingEventListener(FollowingActivityService activityService) {
         return new FollowingEventListener(activityService);
     }
 }

@@ -1,16 +1,10 @@
 package com.mikhailkarpov.bloggingnetwork.feed.domain;
 
-public class PostActivity extends AbstractActivity {
+import lombok.Data;
 
-    public PostActivity(String postAuthorId, String postId) {
-        super(postAuthorId, postId, ActivityType.POST_ACTIVITY);
-    }
+@Data
+public class PostActivity {
 
-    public String getPostAuthorId() {
-        return this.userId;
-    }
-
-    public String getPostId() {
-        return this.sourceId;
-    }
+    private final String postId;
+    private final String authorId;
 }

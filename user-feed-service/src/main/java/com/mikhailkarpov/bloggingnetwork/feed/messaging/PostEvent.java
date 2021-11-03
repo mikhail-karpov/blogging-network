@@ -1,23 +1,51 @@
 package com.mikhailkarpov.bloggingnetwork.feed.messaging;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.mikhailkarpov.bloggingnetwork.feed.domain.PostActivity;
 
-@Data
-@NoArgsConstructor
-public class PostEvent {
+public class PostEvent extends PostActivity {
 
     public enum Status {
         CREATED, DELETED
     }
 
-    @JsonProperty("postId")
-    private String postId;
+    private final Status status;
 
-    @JsonProperty("authorId")
-    private String authorId;
+    public PostEvent(@JsonProperty("postId") String postId,
+                     @JsonProperty("authorId") String authorId,
+                     @JsonProperty("status") Status status) {
+        super(postId, authorId);
+        this.status = status;
+    }
 
-    @JsonProperty("status")
-    private Status status;
+    public Status getStatus() {
+        return status;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        PostEvent event = (PostEvent) o;
+
+        return super.equals(o) && status == event.status;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + status.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "PostEvent{" +
+                "postId=" + getPostId() +
+                ", authorId=" + getAuthorId() +
+                "status=" + status +
+                '}';
+    }
 }

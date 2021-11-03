@@ -1,7 +1,7 @@
 package com.mikhailkarpov.bloggingnetwork.feed.messaging;
 
-import com.mikhailkarpov.bloggingnetwork.feed.domain.FollowingActivity;
-import com.mikhailkarpov.bloggingnetwork.feed.services.ActivityService;
+import com.mikhailkarpov.bloggingnetwork.feed.config.messaging.FollowingEventListenerConfig;
+import com.mikhailkarpov.bloggingnetwork.feed.services.FollowingActivityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -15,21 +15,19 @@ public class FollowingEventListener {
 
     public static final String LISTENER_ID = "following-event-listener";
 
-    private final ActivityService<FollowingActivity> followingActivityService;
+    private final FollowingActivityService activityService;
 
-    @RabbitListener(id = LISTENER_ID, queues = {"${app.messaging.users.following-event-queue}"})
-    void handle(FollowingEvent message) {
+    @RabbitListener(id = LISTENER_ID, queues = {FollowingEventListenerConfig.FOLLOWING_EVENT_QUEUE})
+    void handle(FollowingEvent event) {
 
-        log.info("Received {}", message);
-
-        FollowingActivity activity = new FollowingActivity(message.getFollowerUserId(), message.getFollowingUserId());
-        FollowingEvent.Status status = message.getStatus();
+        log.info("Received {}", event);
+        FollowingEvent.Status status = event.getStatus();
 
         if (FOLLOWED == status) {
-            this.followingActivityService.saveActivity(activity);
+            this.activityService.save(event);
 
         } else if (UNFOLLOWED == status) {
-            this.followingActivityService.deleteActivity(activity);
+            this.activityService.delete(event);
 
         } else {
             throw new IllegalStateException("Unexpected message status: " + status);

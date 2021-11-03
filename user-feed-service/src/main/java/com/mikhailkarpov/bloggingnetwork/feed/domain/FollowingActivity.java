@@ -1,16 +1,10 @@
 package com.mikhailkarpov.bloggingnetwork.feed.domain;
 
-public class FollowingActivity extends AbstractActivity {
+import lombok.Data;
 
-    public FollowingActivity(String followerUserId, String followingUserId) {
-        super(followerUserId, followingUserId, ActivityType.FOLLOWING_ACTIVITY);
-    }
+@Data
+public class FollowingActivity {
 
-    public String getFollowerUserId() {
-        return this.userId;
-    }
-
-    public String getFollowingUserId() {
-        return this.sourceId;
-    }
+    private final String followerUserId;
+    private final String followingUserId;
 }

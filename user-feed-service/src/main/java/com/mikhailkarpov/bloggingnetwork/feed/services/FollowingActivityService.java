@@ -1,18 +1,10 @@
 package com.mikhailkarpov.bloggingnetwork.feed.services;
 
 import com.mikhailkarpov.bloggingnetwork.feed.domain.FollowingActivity;
-import org.springframework.stereotype.Service;
 
-@Service
-public class FollowingActivityService implements ActivityService<FollowingActivity> {
+public interface FollowingActivityService {
 
-    @Override
-    public void saveActivity(FollowingActivity activity) {
+    void save(FollowingActivity activity);
 
-    }
-
-    @Override
-    public void deleteActivity(FollowingActivity activity) {
-
-    }
+    void delete(FollowingActivity activity);
 }

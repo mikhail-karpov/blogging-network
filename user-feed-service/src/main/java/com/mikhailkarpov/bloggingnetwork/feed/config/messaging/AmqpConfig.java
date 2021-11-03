@@ -1,4 +1,4 @@
-package com.mikhailkarpov.bloggingnetwork.feed.config;
+package com.mikhailkarpov.bloggingnetwork.feed.config.messaging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
@@ -27,7 +27,6 @@ public class AmqpConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(this.connectionFactory);
         factory.setMessageConverter(jackson2JsonMessageConverter());
-        factory.setConcurrentConsumers(3);
 
         return factory;
     }

@@ -1,48 +1,30 @@
-package com.mikhailkarpov.bloggingnetwork.feed.config;
+package com.mikhailkarpov.bloggingnetwork.feed.config.messaging;
 
-import com.mikhailkarpov.bloggingnetwork.feed.domain.PostActivity;
 import com.mikhailkarpov.bloggingnetwork.feed.messaging.PostEventListener;
-import com.mikhailkarpov.bloggingnetwork.feed.services.ActivityService;
-import lombok.Getter;
-import lombok.Setter;
+import com.mikhailkarpov.bloggingnetwork.feed.services.PostActivityService;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.validation.annotation.Validated;
 
-import javax.validation.constraints.NotBlank;
-
-@Validated
 @Configuration
-@ConfigurationProperties(prefix = "app.messaging.posts")
-@Getter
-@Setter
 public class PostEventListenerConfig {
 
-    @NotBlank
-    private String topicExchange;
-
-    @NotBlank
-    private String postEventQueue;
-
-    @NotBlank
-    private String postCreatedRoutingKey;
-
-    @NotBlank
-    private String postDeletedRoutingKey;
+    public static final String TOPIC_EXCHANGE = "posts";
+    public static final String POST_EVENT_QUEUE = "post-event-queue";
+    public static final String POST_CREATED_ROUTING_KEY = "post.created";
+    public static final String POST_DELETED_ROUTING_KEY = "post.deleted";
 
     @Bean
     public TopicExchange postTopicExchange() {
-        return new TopicExchange(this.topicExchange);
+        return new TopicExchange(TOPIC_EXCHANGE);
     }
 
     @Bean
     public Queue postEventQueue() {
-        return new Queue(this.postEventQueue);
+        return new Queue(POST_EVENT_QUEUE);
     }
 
     @Bean
@@ -50,7 +32,7 @@ public class PostEventListenerConfig {
         return BindingBuilder
                 .bind(postEventQueue)
                 .to(postTopicExchange)
-                .with(this.postCreatedRoutingKey);
+                .with(POST_CREATED_ROUTING_KEY);
     }
 
     @Bean
@@ -58,11 +40,11 @@ public class PostEventListenerConfig {
         return BindingBuilder
                 .bind(postEventQueue)
                 .to(postTopicExchange)
-                .with(this.postDeletedRoutingKey);
+                .with(POST_DELETED_ROUTING_KEY);
     }
 
     @Bean
-    public PostEventListener postEventListener(ActivityService<PostActivity> activityService) {
+    public PostEventListener postEventListener(PostActivityService activityService) {
         return new PostEventListener(activityService);
     }
 }

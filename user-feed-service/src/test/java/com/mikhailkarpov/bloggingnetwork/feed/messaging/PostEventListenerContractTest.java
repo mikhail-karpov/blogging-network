@@ -1,17 +1,18 @@
 package com.mikhailkarpov.bloggingnetwork.feed.messaging;
 
-import com.mikhailkarpov.bloggingnetwork.feed.domain.ActivityType;
+import com.mikhailkarpov.bloggingnetwork.feed.config.messaging.AmqpConfig;
+import com.mikhailkarpov.bloggingnetwork.feed.config.messaging.PostEventListenerConfig;
 import com.mikhailkarpov.bloggingnetwork.feed.domain.PostActivity;
-import com.mikhailkarpov.bloggingnetwork.feed.services.ActivityService;
-import org.assertj.core.api.Assertions;
+import com.mikhailkarpov.bloggingnetwork.feed.services.PostActivityService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.amqp.rabbit.test.RabbitListenerTest;
 import org.springframework.amqp.rabbit.test.RabbitListenerTestHarness;
 import org.springframework.amqp.rabbit.test.mockito.LatchCountDownAndCallRealMethodAnswer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.contract.stubrunner.StubTrigger;
@@ -19,6 +20,8 @@ import org.springframework.cloud.contract.stubrunner.spring.AutoConfigureStubRun
 import org.springframework.cloud.contract.stubrunner.spring.StubRunnerProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static com.mikhailkarpov.bloggingnetwork.feed.messaging.PostEventListener.LISTENER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,21 +29,27 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 
-@ContextConfiguration
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.NONE,
-        properties = "spring.main.allow-bean-definition-overriding=true")
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {
+        RabbitAutoConfiguration.class,
+        AmqpConfig.class,
+        PostEventListenerContractTest.RabbitListenerConfig.class,
+        PostEventListenerConfig.class})
 @AutoConfigureStubRunner(
         ids = "com.mikhailkarpov.blogging-network:post-service",
         stubsMode = StubRunnerProperties.StubsMode.LOCAL)
-public class PostEventListenerIT extends AbstractRabbitMQContainer {
+@TestPropertySource(properties = {
+        "stubrunner.amqp.enabled=true",
+        "stubrunner.amqp.mockConnection=true",
+        "spring.main.allow-bean-definition-overriding=true"})
+public class PostEventListenerContractTest {
 
     @TestConfiguration
     @RabbitListenerTest
     public static class RabbitListenerConfig {
 
         @Bean
-        public PostEventListener postEventListener(ActivityService<PostActivity> activityService) {
+        public PostEventListener postEventListener(PostActivityService activityService) {
             return new PostEventListener(activityService);
         }
     }
@@ -52,7 +61,7 @@ public class PostEventListenerIT extends AbstractRabbitMQContainer {
     private RabbitListenerTestHarness harness;
 
     @MockBean
-    private ActivityService<PostActivity> postActivityService;
+    private PostActivityService postActivityService;
 
     @Captor
     private ArgumentCaptor<PostActivity> activityArgumentCaptor;
@@ -63,41 +72,21 @@ public class PostEventListenerIT extends AbstractRabbitMQContainer {
         PostEventListener eventListener = this.harness.getSpy(LISTENER_ID);
         assertThat(eventListener).isNotNull();
 
-        LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor(LISTENER_ID, 1);
+        LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor(LISTENER_ID, 2);
         doAnswer(answer).when(eventListener).handle(any());
 
         //when
         this.stubTrigger.trigger("post.created");
-
-        //then
-        assertThat(answer.await(30)).isTrue();
-        verify(this.postActivityService).saveActivity(this.activityArgumentCaptor.capture());
-
-        PostActivity activity = this.activityArgumentCaptor.getValue();
-        assertThat(activity.getPostId()).isNotNull();
-        assertThat(activity.getPostAuthorId()).isNotNull();
-        assertThat(activity.getActivityType()).isEqualTo(ActivityType.POST_ACTIVITY);
-    }
-
-    @Test
-    void givenPostDeleted_thenPostActivityIsDeleted() throws InterruptedException {
-        //given
-        PostEventListener eventListener = this.harness.getSpy(LISTENER_ID);
-        assertThat(eventListener).isNotNull();
-
-        LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor(LISTENER_ID, 1);
-        doAnswer(answer).when(eventListener).handle(any());
-
-        //when
         this.stubTrigger.trigger("post.deleted");
 
         //then
         assertThat(answer.await(30)).isTrue();
-        verify(this.postActivityService).deleteActivity(this.activityArgumentCaptor.capture());
+        verify(this.postActivityService).save(this.activityArgumentCaptor.capture());
+        verify(this.postActivityService).delete(this.activityArgumentCaptor.capture());
 
-        PostActivity activity = this.activityArgumentCaptor.getValue();
-        assertThat(activity.getPostId()).isNotNull();
-        assertThat(activity.getPostAuthorId()).isNotNull();
-        assertThat(activity.getActivityType()).isEqualTo(ActivityType.POST_ACTIVITY);
+        for (PostActivity activity : this.activityArgumentCaptor.getAllValues()) {
+            assertThat(activity.getPostId()).isNotNull();
+            assertThat(activity.getAuthorId()).isNotNull();
+        }
     }
 }
