@@ -1,6 +1,6 @@
 package com.mikhailkarpov.bloggingnetwork.posts.messaging;
 
-import com.mikhailkarpov.bloggingnetwork.posts.config.messaging.RabbitMQConfig;
+import com.mikhailkarpov.bloggingnetwork.posts.config.RabbitMQConfig;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +29,6 @@ import static org.mockito.ArgumentMatchers.any;
         RabbitMQConfig.class,
         RabbitAutoConfiguration.class,
         AmqpPostEventPublisherIT.TestConfig.class})
-@TestPropertySource(locations = "classpath:messaging-test.properties")
 @Testcontainers
 class AmqpPostEventPublisherIT {
 

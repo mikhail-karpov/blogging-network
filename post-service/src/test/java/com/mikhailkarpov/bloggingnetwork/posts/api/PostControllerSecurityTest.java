@@ -1,6 +1,5 @@
 package com.mikhailkarpov.bloggingnetwork.posts.api;
 
-import com.mikhailkarpov.bloggingnetwork.posts.config.TestSecurityConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.service.PostService;
 import org.junit.jupiter.api.Test;

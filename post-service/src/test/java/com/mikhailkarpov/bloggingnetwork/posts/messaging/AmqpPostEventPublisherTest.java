@@ -1,57 +1,40 @@
 package com.mikhailkarpov.bloggingnetwork.posts.messaging;
 
-import com.mikhailkarpov.bloggingnetwork.posts.config.messaging.MessagingProperties;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ExtendWith(SpringExtension.class)
 class AmqpPostEventPublisherTest {
 
-    @Mock
-    private RabbitTemplate rabbitTemplate;
+    private final RabbitTemplate rabbitTemplate = Mockito.mock(RabbitTemplate.class);
+    private final String exchange = "posts-exchange";
+    private final String postCreatedKey = "post.created";
+    private final String postDeletedKey = "post.deleted";
 
-    @Mock
-    private MessagingProperties properties;
-
-    @InjectMocks
-    private AmqpPostEventPublisher eventPublisher;
+    private final AmqpPostEventPublisher eventPublisher = new AmqpPostEventPublisher(
+            rabbitTemplate, exchange, postCreatedKey, postDeletedKey);
 
     @Test
     void shouldPublishPostCreatedEvent() {
         //given
-        String exchange = "posts-exchange";
-        String key = "post.created";
-
-        Mockito.when(this.properties.getTopicExchange()).thenReturn(exchange);
-        Mockito.when(this.properties.getPostCreatedRoutingKey()).thenReturn(key);
+        PostEvent event = new PostEvent("postId", "authorId", EventStatus.CREATED);
 
         //when
-        PostEvent event = new PostEvent("postId", "authorId", EventStatus.CREATED);
         eventPublisher.publish(event);
 
         //then
-        Mockito.verify(this.rabbitTemplate).convertAndSend(exchange, key, event);
+        Mockito.verify(this.rabbitTemplate).convertAndSend(exchange, postCreatedKey, event);
     }
 
     @Test
     void shouldPublishPostDeletedEvent() {
         //given
-        String exchange = "posts-exchange";
-        String key = "post.created";
-
-        Mockito.when(this.properties.getTopicExchange()).thenReturn(exchange);
-        Mockito.when(this.properties.getPostDeletedRoutingKey()).thenReturn(key);
+        PostEvent event = new PostEvent("postId", "authorId", EventStatus.DELETED);
 
         //when
-        PostEvent event = new PostEvent("postId", "authorId", EventStatus.DELETED);
         this.eventPublisher.publish(event);
 
         //then
-        Mockito.verify(this.rabbitTemplate).convertAndSend(exchange, key, event);
+        Mockito.verify(this.rabbitTemplate).convertAndSend(exchange, postDeletedKey, event);
     }
 }

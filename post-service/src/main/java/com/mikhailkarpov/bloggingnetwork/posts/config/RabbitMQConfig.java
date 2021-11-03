@@ -1,4 +1,4 @@
-package com.mikhailkarpov.bloggingnetwork.posts.config.messaging;
+package com.mikhailkarpov.bloggingnetwork.posts.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mikhailkarpov.bloggingnetwork.posts.messaging.AmqpPostEventPublisher;
@@ -17,22 +17,21 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
 
 @Configuration
-@EnableConfigurationProperties(MessagingProperties.class)
 public class RabbitMQConfig {
 
-    @Autowired
-    private MessagingProperties properties;
+    public static final String TOPIC_EXCHANGE = "posts";
+    public static final String POST_EVENT_QUEUE = "post-event-queue";
+    public static final String POST_CREATED_ROUTING_KEY = "post.created";
+    public static final String POST_DELETED_ROUTING_KEY = "post.deleted";
 
     @Bean
     public TopicExchange postExchange() {
-        String topicExchange = this.properties.getTopicExchange();
-        return new TopicExchange(topicExchange);
+        return new TopicExchange(TOPIC_EXCHANGE);
     }
 
     @Bean
     public Queue postEventQueue() {
-        String followingEventQueue = this.properties.getPostEventQueue();
-        return new Queue(followingEventQueue);
+        return new Queue(POST_EVENT_QUEUE);
     }
 
     @Bean
@@ -40,8 +39,7 @@ public class RabbitMQConfig {
         return BindingBuilder
                 .bind(postEventQueue)
                 .to(postExchange)
-                .with(this.properties.getPostCreatedRoutingKey());
-
+                .with(POST_CREATED_ROUTING_KEY);
     }
 
     @Bean
@@ -49,7 +47,7 @@ public class RabbitMQConfig {
         return BindingBuilder
                 .bind(postEventQueue)
                 .to(postExchange)
-                .with(this.properties.getPostDeletedRoutingKey());
+                .with(POST_DELETED_ROUTING_KEY);
     }
 
     @Bean
@@ -67,6 +65,7 @@ public class RabbitMQConfig {
 
     @Bean
     public PostEventPublisher postEventPublisher(RabbitTemplate rabbitTemplate) {
-        return new AmqpPostEventPublisher(rabbitTemplate, this.properties);
+        return new AmqpPostEventPublisher(
+                rabbitTemplate, TOPIC_EXCHANGE, POST_CREATED_ROUTING_KEY, POST_DELETED_ROUTING_KEY);
     }
 }

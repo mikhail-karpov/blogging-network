@@ -1,5 +1,6 @@
 package com.mikhailkarpov.users.api;
 
+import com.mikhailkarpov.users.config.SecurityTestConfig;
 import com.mikhailkarpov.users.domain.UserProfile;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.service.UserService;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
@@ -25,10 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = UserController.class)
 @AutoConfigureJsonTesters
+@ContextConfiguration(classes = SecurityTestConfig.class)
 class UserControllerTest {
-
-    @MockBean
-    private JwtDecoder jwtDecoder;
 
     @Autowired
     private MockMvc mockMvc;

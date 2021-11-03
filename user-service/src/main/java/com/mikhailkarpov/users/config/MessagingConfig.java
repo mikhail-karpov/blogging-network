@@ -1,4 +1,4 @@
-package com.mikhailkarpov.users.config.messaging;
+package com.mikhailkarpov.users.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mikhailkarpov.users.messaging.FollowingEventPublisher;
@@ -10,28 +10,25 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableConfigurationProperties(QueueBindingProperties.class)
 public class MessagingConfig {
 
-    @Autowired
-    private QueueBindingProperties properties;
+    public static final String TOPIC_EXCHANGE = "users";
+    public static final String QUEUE = "following-event-queue";
+    public static final String FOLLOW_ROUTING_KEY = "user.follow";
+    public static final String UNFOLLOW_ROUTING_KEY = "user.unfollow";
 
     @Bean
     public TopicExchange usersTopicExchange() {
-        String topicExchange = this.properties.getTopicExchange();
-        return new TopicExchange(topicExchange);
+        return new TopicExchange(TOPIC_EXCHANGE);
     }
 
     @Bean
     public Queue followingEventQueue() {
-        String followingEventQueue = this.properties.getFollowingEventQueue();
-        return new Queue(followingEventQueue);
+        return new Queue(QUEUE);
     }
 
     @Bean
@@ -39,7 +36,7 @@ public class MessagingConfig {
         return BindingBuilder
                 .bind(followingEventQueue)
                 .to(usersTopicExchange)
-                .with(this.properties.getFollowRoutingKey());
+                .with(FOLLOW_ROUTING_KEY);
     }
 
     @Bean
@@ -47,7 +44,7 @@ public class MessagingConfig {
         return BindingBuilder
                 .bind(followingEventQueue)
                 .to(usersTopicExchange)
-                .with(this.properties.getUnfollowRoutingKey());
+                .with(UNFOLLOW_ROUTING_KEY);
     }
 
     @Bean
@@ -64,11 +61,8 @@ public class MessagingConfig {
     }
 
     @Bean
-    public FollowingEventPublisher followingMessageSender(RabbitTemplate rabbitTemplate) {
-        String topicExchange = this.properties.getTopicExchange();
-        String followRoutingKey = this.properties.getFollowRoutingKey();
-        String unfollowRoutingKey = this.properties.getUnfollowRoutingKey();
-
-        return new RabbitMQFollowingMessageSender(rabbitTemplate, topicExchange, followRoutingKey, unfollowRoutingKey);
+    public FollowingEventPublisher followingEventPublisher(RabbitTemplate rabbitTemplate) {
+        return new RabbitMQFollowingMessageSender(
+                rabbitTemplate, TOPIC_EXCHANGE, FOLLOW_ROUTING_KEY, UNFOLLOW_ROUTING_KEY);
     }
 }
