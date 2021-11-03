@@ -1,6 +1,5 @@
 package com.mikhailkarpov.bloggingnetwork.posts.config;
 
-import com.mikhailkarpov.bloggingnetwork.posts.config.messaging.MessagingProperties;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import org.junit.jupiter.api.AfterEach;
@@ -14,11 +13,11 @@ public abstract class AbstractIT {
 
     static final KeycloakContainer KEYCLOAK;
 
-    static final RabbitMQContainer RABBIT_MQ_CONTAINER = new RabbitMQContainer("rabbitmq");
+    static final RabbitMQContainer RABBIT_MQ_CONTAINER;
 
     static {
-        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
-                .withReuse(true);
+        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2");
+        RABBIT_MQ_CONTAINER = new RabbitMQContainer("rabbitmq").withExposedPorts(5672);
 
         KEYCLOAK.start();
         RABBIT_MQ_CONTAINER.start();
@@ -49,13 +48,9 @@ public abstract class AbstractIT {
     @Autowired
     private RabbitAdmin rabbitAdmin;
 
-    @Autowired
-    private MessagingProperties properties;
-
     @AfterEach
     void purgeQueue() {
-        String postEventQueue = this.properties.getPostEventQueue();
-        this.rabbitAdmin.purgeQueue(postEventQueue, true);
+        this.rabbitAdmin.purgeQueue(RabbitMQConfig.POST_EVENT_QUEUE, true);
     }
 }
 
