@@ -1,4 +1,4 @@
 app:
   keycloak:
-    adminUsername: admin
-    adminPassword: admin
+    adminUsername: ${KEYCLOAK_USER}
+    adminPassword: ${KEYCLOAK_PASSWORD}

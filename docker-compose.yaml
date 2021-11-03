@@ -59,6 +59,8 @@ services:
     container_name: user-service
     environment:
       - CONFIG_URI=http://config:8888
+      - KEYCLOAK_USER=${KEYCLOAK_USER}
+      - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD}
     depends_on:
       - config
       - keycloak
