@@ -2,12 +2,12 @@ package com.mikhailkarpov.users.service;
 
 import com.mikhailkarpov.users.domain.Following;
 import com.mikhailkarpov.users.domain.FollowingId;
+import com.mikhailkarpov.users.domain.UserProfile;
 import com.mikhailkarpov.users.exception.ResourceAlreadyExistsException;
 import com.mikhailkarpov.users.exception.ResourceNotFoundException;
 import com.mikhailkarpov.users.messaging.FollowingEvent;
 import com.mikhailkarpov.users.messaging.FollowingEventPublisher;
 import com.mikhailkarpov.users.repository.FollowingRepository;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -15,6 +15,8 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.util.Optional;
 
 import static com.mikhailkarpov.users.messaging.FollowingEvent.Status.FOLLOWED;
 import static com.mikhailkarpov.users.messaging.FollowingEvent.Status.UNFOLLOWED;
@@ -45,13 +47,20 @@ class FollowingServiceImplTest {
 
     private final String followerId = "followerId";
     private final String userId = "userId";
+
+    private final UserProfile follower =
+            new UserProfile(followerId, "follower", "follower@example.com");
+    private final UserProfile user =
+            new UserProfile(userId, "user", "user@example.com");
+
     private final FollowingId followingId = new FollowingId(followerId, userId);
 
-    @Disabled
     @Test
     void givenFollowingNotFound_whenAddToFollowers_thenSaved() {
         //given
         when(this.followingRepository.existsById(this.followingId)).thenReturn(false);
+        when(this.userService.findById(followerId)).thenReturn(Optional.of(follower));
+        when(this.userService.findById(userId)).thenReturn(Optional.of(user));
 
         //when
         this.followingService.addToFollowers(this.userId, this.followerId);

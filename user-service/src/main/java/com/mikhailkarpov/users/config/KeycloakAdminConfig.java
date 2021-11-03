@@ -17,7 +17,7 @@ import javax.validation.constraints.NotBlank;
 @ConfigurationProperties(prefix = "app.keycloak")
 @Getter
 @Setter
-public class KeycloakConfig {
+public class KeycloakAdminConfig {
 
     @NotBlank
     private String serverUrl;

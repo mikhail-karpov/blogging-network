@@ -1,6 +1,6 @@
 package com.mikhailkarpov.users.service;
 
-import com.mikhailkarpov.users.config.KeycloakConfig;
+import com.mikhailkarpov.users.config.KeycloakAdminConfig;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.CreatedResponseUtil;
@@ -18,7 +18,7 @@ import javax.ws.rs.core.Response;
 public class KeycloakAdminClientImpl implements KeycloakAdminClient {
 
     private final UsersResource usersResource;
-    private final KeycloakConfig keycloakConfig;
+    private final KeycloakAdminConfig keycloakAdminConfig;
 
     @Override
     public String createUser(UserRepresentation user) {
@@ -37,8 +37,8 @@ public class KeycloakAdminClientImpl implements KeycloakAdminClient {
     public AccessTokenResponse obtainAccessToken(String username, String password) {
 
         try (Keycloak keycloak = KeycloakBuilder.builder()
-                .serverUrl(keycloakConfig.getServerUrl())
-                .realm(keycloakConfig.getRealm())
+                .serverUrl(keycloakAdminConfig.getServerUrl())
+                .realm(keycloakAdminConfig.getRealm())
                 .grantType(OAuth2Constants.PASSWORD)
                 .clientId("admin-cli")
                 .username(username)

@@ -1,5 +1,6 @@
 package com.mikhailkarpov.users.api;
 
+import com.mikhailkarpov.users.config.SecurityTestConfig;
 import com.mikhailkarpov.users.domain.UserProfile;
 import com.mikhailkarpov.users.service.FollowingService;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
@@ -25,10 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = FollowingController.class)
+@ContextConfiguration(classes = SecurityTestConfig.class)
 class FollowingControllerTest {
-
-    @MockBean
-    private JwtDecoder jwtDecoder;
 
     @Autowired
     private MockMvc mockMvc;

@@ -1,7 +1,6 @@
 package com.mikhailkarpov.users.config;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -13,12 +12,8 @@ public abstract class AbstractIT {
     static final GenericContainer REDIS;
 
     static {
-        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
-                .withReuse(true);
-
-        REDIS = new GenericContainer("redis")
-                .withExposedPorts(6379)
-                .withReuse(true);
+        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2");
+        REDIS = new GenericContainer("redis").withExposedPorts(6379);
 
         KEYCLOAK.start();
         REDIS.start();
@@ -30,6 +25,8 @@ public abstract class AbstractIT {
         registry.add("app.keycloak.realm", () -> "master");
         registry.add("app.keycloak.adminUsername", KEYCLOAK::getAdminUsername);
         registry.add("app.keycloak.adminPassword", KEYCLOAK::getAdminPassword);
+        registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri",
+                () -> String.format("%s/realms/master", KEYCLOAK.getAuthServerUrl()));
     }
 
     @DynamicPropertySource

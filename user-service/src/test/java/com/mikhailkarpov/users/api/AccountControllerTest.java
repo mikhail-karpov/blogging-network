@@ -1,6 +1,7 @@
 package com.mikhailkarpov.users.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mikhailkarpov.users.config.SecurityTestConfig;
 import com.mikhailkarpov.users.domain.UserProfile;
 import com.mikhailkarpov.users.dto.UserAuthenticationRequest;
 import com.mikhailkarpov.users.dto.UserRegistrationRequest;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
@@ -29,13 +31,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = AccountController.class)
+@ContextConfiguration(classes = SecurityTestConfig.class)
 class AccountControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @MockBean
-    private JwtDecoder jwtDecoder;
 
     @Autowired
     private ObjectMapper objectMapper;
