@@ -8,9 +8,6 @@ Contract.make {
     request {
         method(GET())
         url('/users/1/profile')
-        headers {
-            header(accept(), applicationJson())
-        }
     }
     response {
         status(OK())
