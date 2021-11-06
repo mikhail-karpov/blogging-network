@@ -24,7 +24,7 @@ class PostDtoTest {
         //given
         PostDto postDto = PostDto.builder()
                 .id("postId")
-                .userId("user")
+                .user(new UserProfileDto("user", "username"))
                 .content("Post content")
                 .createdDate(dateTime)
                 .build();
@@ -34,7 +34,8 @@ class PostDtoTest {
 
         //then
         assertThat(json).extractingJsonPathStringValue("$.id").isEqualTo("postId");
-        assertThat(json).extractingJsonPathStringValue("$.userId").isEqualTo("user");
+        assertThat(json).extractingJsonPathStringValue("$.user.userId").isEqualTo("user");
+        assertThat(json).extractingJsonPathStringValue("$.user.username").isEqualTo("username");
         assertThat(json).extractingJsonPathStringValue("$.content").isEqualTo("Post content");
         assertThat(json).extractingJsonPathStringValue("$.createdDate").isEqualTo("2020-03-31T06:55:02");
     }
@@ -44,7 +45,7 @@ class PostDtoTest {
         //given
         String json = "{" +
                 "\"id\":\"postId\", " +
-                "\"userId\":\"user\", " +
+                "\"user\":{\"userId\":\"user-id\", \"username\":\"user\"}, " +
                 "\"content\":\"Post content\" ," +
                 "\"createdDate\":\"2020-03-31T06:55:02\"" +
                 "}";
@@ -54,7 +55,8 @@ class PostDtoTest {
 
         //then
         assertThat(dto.getId()).isEqualTo("postId");
-        assertThat(dto.getUserId()).isEqualTo("user");
+        assertThat(dto.getUser().getUserId()).isEqualTo("user-id");
+        assertThat(dto.getUser().getUsername()).isEqualTo("user");
         assertThat(dto.getContent()).isEqualTo("Post content");
         assertThat(dto.getCreatedDate()).isEqualTo(dateTime);
     }

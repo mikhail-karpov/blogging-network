@@ -22,19 +22,22 @@ class PostCommentDtoTest {
     void testSerialize() throws IOException {
         //given
         String id = UUID.randomUUID().toString();
-        String userId = UUID.randomUUID().toString();
         String comment = "Post comment";
         LocalDateTime createdDate = LocalDateTime.of(2020, 2, 15, 1, 45, 33);
-        PostCommentDto dto = new PostCommentDto(id, userId, comment, createdDate);
+
+        String userId = UUID.randomUUID().toString();
+        UserProfileDto user = new UserProfileDto(userId, "username");
+        PostCommentDto dto = new PostCommentDto(id, user, comment, createdDate);
 
         //when
         JsonContent<PostCommentDto> json = jacksonTester.write(dto);
 
         //then
         assertThat(json).extractingJsonPathStringValue("$.id").isEqualTo(id);
-        assertThat(json).extractingJsonPathStringValue("$.userId").isEqualTo(userId);
         assertThat(json).extractingJsonPathStringValue("$.comment").isEqualTo("Post comment");
         assertThat(json).extractingJsonPathStringValue("$.createdDate").isEqualTo("2020-02-15T01:45:33");
+        assertThat(json).extractingJsonPathStringValue("$.user.userId").isEqualTo(userId);
+        assertThat(json).extractingJsonPathStringValue("$.user.username").isEqualTo("username");
     }
 
     @Test
@@ -42,7 +45,7 @@ class PostCommentDtoTest {
         //given
         String json = "{" +
                 "\"id\":\"commentId\", " +
-                "\"userId\":\"user\", " +
+                "\"user\":{\"userId\":\"user-id\",\"username\":\"name\"}," +
                 "\"comment\":\"Post comment\", " +
                 "\"createdDate\":\"2002-04-13T01:05:13\"" +
                 "}";
@@ -53,8 +56,9 @@ class PostCommentDtoTest {
 
         //then
         assertThat(dto.getId()).isEqualTo("commentId");
-        assertThat(dto.getUserId()).isEqualTo("user");
         assertThat(dto.getComment()).isEqualTo("Post comment");
         assertThat(dto.getCreatedDate()).isEqualTo(expectedTime);
+        assertThat(dto.getUser().getUserId()).isEqualTo("user-id");
+        assertThat(dto.getUser().getUsername()).isEqualTo("name");
     }
 }

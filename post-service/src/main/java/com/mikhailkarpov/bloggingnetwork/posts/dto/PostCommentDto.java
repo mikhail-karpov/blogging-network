@@ -9,17 +9,14 @@ import java.time.LocalDateTime;
 public class PostCommentDto {
 
     private String id;
-
-    private String userId;
-
     private String comment;
-
     private LocalDateTime createdDate;
+    private UserProfileDto user;
 
     @Builder
-    public PostCommentDto(String id, String userId, String comment, LocalDateTime createdDate) {
+    public PostCommentDto(String id, UserProfileDto user, String comment, LocalDateTime createdDate) {
         this.id = id;
-        this.userId = userId;
+        this.user = user;
         this.comment = comment;
         this.createdDate = createdDate;
     }

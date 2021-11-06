@@ -4,9 +4,10 @@ import com.mikhailkarpov.bloggingnetwork.posts.domain.PostComment;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.CreatePostCommentRequest;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PagedResult;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PostCommentDto;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.mapper.DtoMapper;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
 import com.mikhailkarpov.bloggingnetwork.posts.service.PostCommentService;
+import com.mikhailkarpov.bloggingnetwork.posts.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +21,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
-import java.util.Optional;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -28,7 +29,7 @@ import java.util.UUID;
 public class PostCommentController {
 
     private final PostCommentService postCommentService;
-    private final DtoMapper<PostComment, PostCommentDto> commentDtoMapper;
+    private final UserService userService;
 
     @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<PostCommentDto> commentPost(@PathVariable UUID postId,
@@ -39,26 +40,25 @@ public class PostCommentController {
         String userId = jwt.getSubject();
         String content = request.getComment();
         PostComment postComment = postCommentService.addComment(postId, new PostComment(userId, content));
-        PostCommentDto dto = commentDtoMapper.map(postComment);
 
-        URI location = uriComponentsBuilder.path("/posts/{postId}/comments/{commentId}").build(postId, dto.getId());
-        return ResponseEntity.created(location).body(dto);
+        URI location = uriComponentsBuilder.path("/posts/{postId}/comments/{commentId}").build(postId, postComment.getId());
+        return ResponseEntity.created(location).build();
     }
 
     @GetMapping("/posts/{postId}/comments")
     public PagedResult<PostCommentDto> findCommentsByPostId(@PathVariable UUID postId, Pageable pageable) {
 
-        Page<PostComment> commentPage = postCommentService.findAllByPostId(postId, pageable);
-        Page<PostCommentDto> dtoPage = commentPage.map(commentDtoMapper::map);
+        Page<PostCommentDto> commentPage = postCommentService.findAllByPostId(postId, pageable)
+                .map(this::map);
 
-        return new PagedResult<>(dtoPage);
+        return new PagedResult<>(commentPage);
     }
 
     @GetMapping("/posts/{postId}/comments/{commentId}")
     public PostCommentDto findCommentById(@PathVariable UUID postId, @PathVariable UUID commentId) {
 
         PostComment comment = findCommentOrElseThrow(commentId);
-        return commentDtoMapper.map(comment);
+        return map(comment);
     }
 
     @DeleteMapping("/posts/{postId}/comments/{commentId}")
@@ -72,6 +72,17 @@ public class PostCommentController {
         }
 
         postCommentService.removeComment(postId, commentId);
+    }
+
+    private PostCommentDto map(PostComment postComment) {
+        String id = postComment.getId().toString();
+        String userId = postComment.getUserId();
+        String content = postComment.getContent();
+        LocalDateTime createdDate = postComment.getCreatedDate();
+
+        UserProfileDto user = this.userService.getUserById(postComment.getUserId());
+
+        return new PostCommentDto(id, user, content, createdDate);
     }
 
     private PostComment findCommentOrElseThrow(UUID commentId) {

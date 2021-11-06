@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -46,13 +47,13 @@ class PostControllerSecurityTest extends AbstractControllerTest {
     void givenNotOwner_whenDeletePost_thenForbidden() throws Exception {
         //given
         UUID postId = UUID.randomUUID();
-        Post post = new Post("not owner", "Post content");
+        Post post = new Post("owner", "Post content");
 
         when(postService.findById(postId, false)).thenReturn(Optional.of(post));
 
         //when
         mockMvc.perform(delete("/posts/{id}", postId)
-                        .header("Authorization", "Bearer token"))
+                        .with(jwt().jwt(jwt -> jwt.subject("not-owner"))))
                 .andExpect(status().isForbidden());
 
         //then

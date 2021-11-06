@@ -1,11 +1,10 @@
 package com.mikhailkarpov.bloggingnetwork.posts.api;
 
-import com.mikhailkarpov.bloggingnetwork.posts.config.TestSecurityConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.CreatePostRequest;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.PagedResult;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.PostDto;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.service.PostService;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -13,15 +12,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
 import java.util.Collections;
@@ -29,66 +24,41 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PostController.class)
-@AutoConfigureJsonTesters
 class PostControllerTest extends AbstractControllerTest {
 
     @MockBean
     PostService postService;
 
-    @Autowired
-    private JacksonTester<PostDto> dtoJacksonTester;
-
-    @Autowired
-    private JacksonTester<PagedResult<PostDto>> pagedDtoJacksonTester;
-
     @Captor
-    private ArgumentCaptor<Post> postArgumentCaptor;
-
-    private final String userId = TestSecurityConfig.SUBJECT;
-    private final CreatePostRequest request = new CreatePostRequest(RandomStringUtils.randomAlphabetic(10));
-    private final Post post = new Post(userId, request.getContent());
-    private final PostDto postDto = PostDto.builder()
-            .id(post.getId().toString())
-            .userId(userId)
-            .content(post.getContent())
-            .createdDate(post.getCreatedDate())
-            .build();
-
-    private final PageRequest pageRequest = PageRequest.of(1, 5);
-    private final Page<Post> postPage = new PageImpl<>(Collections.singletonList(post), pageRequest, 6L);
-    private final PagedResult<PostDto> pagedResult =
-            new PagedResult<>(new PageImpl<>(Collections.singletonList(postDto), pageRequest, 6L));
+    ArgumentCaptor<Post> postArgumentCaptor;
 
     @Test
     void givenRequest_whenCreatePost_thenCreated() throws Exception {
         //given
+        String userId = "user-id";
+        Post post = new Post(userId, "post content");
+
         when(postService.save(any())).thenReturn(post);
 
         //when
-        MockHttpServletResponse response = mockMvc.perform(post("/posts")
-                        .header("Authorization", "Bearer token")
+        mockMvc.perform(post("/posts")
+                        .with(jwt().jwt(jwt -> jwt.subject(userId)))
                         .contentType(APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andReturn()
-                .getResponse();
+                        .content(objectMapper.writeValueAsString(new CreatePostRequest("post content"))))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", "http://localhost/posts/" + post.getId()));
 
         //then
-        assertThat(response.getStatus()).isEqualTo(201);
-        assertThat(response.getHeader("Location")).isEqualTo("http://localhost/posts/" + postDto.getId());
-        assertThat(response.getContentAsString()).isEqualTo(dtoJacksonTester.write(postDto).getJson());
-
         verify(postService).save(postArgumentCaptor.capture());
-        Post captorValue = postArgumentCaptor.getValue();
-        assertThat(captorValue).isNotNull();
-        assertThat(captorValue.getUserId()).isEqualTo(userId);
-        assertThat(captorValue.getContent()).isEqualTo(request.getContent());
+        Assertions.assertThat(postArgumentCaptor.getValue().getUserId()).isEqualTo(userId);
+        Assertions.assertThat(postArgumentCaptor.getValue().getContent()).isEqualTo("post content");
     }
 
     @ParameterizedTest
@@ -96,15 +66,13 @@ class PostControllerTest extends AbstractControllerTest {
     @MethodSource("getInvalidRequests")
     void givenNotValidRequest_whenCreatePost_thenBadRequest(CreatePostRequest request) throws Exception {
         //when
-        MockHttpServletResponse response = mockMvc.perform(post("/posts")
-                        .header("Authorization", "Bearer token")
+        mockMvc.perform(post("/posts")
+                        .with(jwt())
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andReturn()
-                .getResponse();
+                .andExpect(status().isBadRequest());
 
         //then
-        assertThat(response.getStatus()).isEqualTo(400);
         verifyNoInteractions(postService);
     }
 
@@ -118,111 +86,103 @@ class PostControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    void givenPosts_whenFindAll_thenFound() throws Exception {
-        //given
-        when(postService.findAll(pageRequest)).thenReturn(postPage);
-
-        //when
-        MockHttpServletResponse response = mockMvc.perform(get("/posts?page=1&size=5")
-                        .header("Authorization", "Bearer token"))
-                .andReturn()
-                .getResponse();
-
-        //then
-        assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(response.getContentAsString()).isEqualTo(pagedDtoJacksonTester.write(pagedResult).getJson());
-        verify(postService).findAll(pageRequest);
-    }
-
-    @Test
     void givenPost_whenFindById_thenFound() throws Exception {
         //given
-        UUID postId = post.getId();
-        when(postService.findById(postId, false)).thenReturn(Optional.of(post));
+        String userId = "user-id";
+        Post post = new Post(userId, "post content");
+
+        when(postService.findById(post.getId(), false)).thenReturn(Optional.of(post));
+        when(userService.getUserById(userId)).thenReturn(new UserProfileDto(userId, "username"));
 
         //when
-        MockHttpServletResponse response = mockMvc.perform(get("/posts/{id}", postId)
-                        .header("Authorization", "Bearer token"))
-                .andReturn()
-                .getResponse();
+        mockMvc.perform(get("/posts/{id}", post.getId())
+                        .with(jwt().jwt(jwt -> jwt.subject(userId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(post.getId().toString()))
+                .andExpect(jsonPath("$.content").value("post content"))
+                .andExpect(jsonPath("$.createdDate").isNotEmpty())
+                .andExpect(jsonPath("$.user.userId").value("user-id"))
+                .andExpect(jsonPath("$.user.username").value("username"));
 
         //then
-        assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(response.getContentAsString()).isEqualTo(dtoJacksonTester.write(postDto).getJson());
-        verify(postService).findById(postId, false);
+        verify(postService).findById(post.getId(), false);
+        verify(userService).getUserById(userId);
     }
 
     @Test
     void givenNoPost_whenFindById_thenNotFound() throws Exception {
         //given
-        UUID postId = UUID.randomUUID();
-        when(postService.findById(postId)).thenReturn(Optional.empty());
+        when(postService.findById(any())).thenReturn(Optional.empty());
 
         //when
-        MockHttpServletResponse response = mockMvc.perform(get("/posts/{id}", postId)
-                        .header("Authorization", "Bearer token"))
-                .andReturn()
-                .getResponse();
+        mockMvc.perform(get("/posts/{id}", UUID.randomUUID())
+                        .with(jwt().jwt(jwt -> jwt.subject("user-id"))))
+                .andExpect(status().isNotFound());
 
         //then
-        assertThat(response.getStatus()).isEqualTo(404);
-        verify(postService).findById(postId, false);
+        verify(postService).findById(any(), eq(false));
     }
 
     @Test
     void givenPosts_whenFindByUserId_thenFound() throws Exception {
         //given
-        String userId = post.getUserId();
+        String userId = "user-id";
+        PageRequest pageRequest = PageRequest.of(1, 5);
+        Post post = new Post(userId, "post content");
+        Page<Post> postPage = new PageImpl<>(Collections.singletonList(post), pageRequest, 6L);
+
         when(postService.findAllByUserId(userId, pageRequest)).thenReturn(postPage);
+        when(userService.getUserById(userId)).thenReturn(new UserProfileDto(userId, "username"));
 
         //when
         String url = "/posts/users/{id}?page=1&size=5";
-        MockHttpServletResponse response = mockMvc.perform(get(url, userId)
-                        .header("Authorization", "Bearer token"))
-                .andReturn()
-                .getResponse();
+        mockMvc.perform(get(url, userId)
+                        .with(jwt().jwt(jwt -> jwt.subject(userId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.totalResults").value(6))
+                .andExpect(jsonPath("$.result").isArray())
+                .andExpect(jsonPath("$.result.size()").value(1))
+                .andExpect(jsonPath("$.result[0].id").value(post.getId().toString()))
+                .andExpect(jsonPath("$.result[0].content").value("post content"))
+                .andExpect(jsonPath("$.result[0].createdDate").isNotEmpty())
+                .andExpect(jsonPath("$.result[0].user.userId").value("user-id"))
+                .andExpect(jsonPath("$.result[0].user.username").value("username"));
 
         //then
-        assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(response.getContentAsString()).isEqualTo(pagedDtoJacksonTester.write(pagedResult).getJson());
         verify(postService).findAllByUserId(userId, pageRequest);
+        verify(userService).getUserById(userId);
     }
 
     @Test
     void givenPost_whenDeletePostById_thenNoContent() throws Exception {
         //given
-        UUID postId = post.getId();
-        when(postService.findById(postId, false)).thenReturn(Optional.of(post));
+        Post post = new Post("user-id", "content");
+        when(postService.findById(post.getId(), false)).thenReturn(Optional.of(post));
 
         //when
-        MockHttpServletResponse response = mockMvc.perform(delete("/posts/{id}", postId)
-                        .header("Authorization", "Bearer token"))
-                .andReturn()
-                .getResponse();
+        mockMvc.perform(delete("/posts/{id}", post.getId())
+                        .with(jwt().jwt(jwt -> jwt.subject("user-id"))))
+                .andExpect(status().isNoContent());
 
         //then
-        assertThat(response.getStatus()).isEqualTo(204);
-        assertThat(response.getContentAsString()).isEmpty();
-        verify(postService).findById(postId, false);
-        verify(postService).deleteById(postId);
+        verify(postService).findById(post.getId(), false);
+        verify(postService).deleteById(post.getId());
     }
 
     @Test
     void givenNoPost_whenDeletePostById_thenNotFound() throws Exception {
         //given
-        UUID postId = post.getId();
-        when(postService.findById(postId, false)).thenReturn(Optional.empty());
+        when(postService.findById(any(), eq(false))).thenReturn(Optional.empty());
 
         //when
-        MockHttpServletResponse response = mockMvc.perform(delete("/posts/{id}", postId)
-                        .header("Authorization", "Bearer token"))
-                .andReturn()
-                .getResponse();
+        mockMvc.perform(delete("/posts/{id}", UUID.randomUUID())
+                        .with(jwt()))
+                .andExpect(status().isNotFound());
 
         //then
-        assertThat(response.getStatus()).isEqualTo(404);
-        assertThat(response.getContentAsString()).isEmpty();
-        verify(postService).findById(postId, false);
+        verify(postService).findById(any(), eq(false));
         verifyNoMoreInteractions(postService);
     }
 }
