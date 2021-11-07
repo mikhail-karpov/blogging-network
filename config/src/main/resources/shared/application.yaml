@@ -12,6 +12,11 @@ spring:
 
   security:
     oauth2:
+      client:
+        provider:
+          keycloak:
+            authorization-uri: ${app.keycloak.serverUrl}/realms/${app.keycloak.realm}/protocol/openid-connect/authorize
+            token-uri: ${app.keycloak.serverUrl}/realms/${app.keycloak.realm}/protocol/openid-connect/token
       resourceserver:
         jwt:
           issuer-uri: ${app.keycloak.serverUrl}/realms/${app.keycloak.realm}
@@ -24,4 +29,4 @@ eureka:
 app:
   keycloak:
     serverUrl: http://keycloak:8080/auth
-    realm: master
+    realm: bloggingnetwork

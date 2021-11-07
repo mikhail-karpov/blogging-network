@@ -12,7 +12,9 @@ public abstract class AbstractIT {
     static final GenericContainer REDIS;
 
     static {
-        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2");
+        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
+                .withRealmImportFile("./bloggingnetwork-realm.json");
+
         REDIS = new GenericContainer("redis").withExposedPorts(6379);
 
         KEYCLOAK.start();
@@ -22,11 +24,8 @@ public abstract class AbstractIT {
     @DynamicPropertySource
     static void configKeycloak(DynamicPropertyRegistry registry) {
         registry.add("app.keycloak.serverUrl", KEYCLOAK::getAuthServerUrl);
-        registry.add("app.keycloak.realm", () -> "master");
-        registry.add("app.keycloak.adminUsername", KEYCLOAK::getAdminUsername);
-        registry.add("app.keycloak.adminPassword", KEYCLOAK::getAdminPassword);
         registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri",
-                () -> String.format("%s/realms/master", KEYCLOAK.getAuthServerUrl()));
+                () -> String.format("%s/realms/${app.keycloak.realm}", KEYCLOAK.getAuthServerUrl()));
     }
 
     @DynamicPropertySource

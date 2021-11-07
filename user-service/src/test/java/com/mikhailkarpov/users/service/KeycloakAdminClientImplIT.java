@@ -1,12 +1,21 @@
 package com.mikhailkarpov.users.service;
 
-import com.mikhailkarpov.users.config.AbstractIT;
+import com.mikhailkarpov.users.config.KeycloakAdminConfig;
+import dasniko.testcontainers.keycloak.KeycloakContainer;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.ws.rs.WebApplicationException;
 import java.util.Collections;
@@ -15,11 +24,33 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@SpringBootTest
-class KeycloakAdminClientImplIT extends AbstractIT {
+@ExtendWith(SpringExtension.class)
+@EnableConfigurationProperties
+@ContextConfiguration(classes = {KeycloakAdminConfig.class, KeycloakAdminClientImpl.class})
+@TestPropertySource(locations = "classpath:keycloak-admin-client-test.properties")
+class KeycloakAdminClientImplIT {
+
+    static final KeycloakContainer KEYCLOAK;
+
+    static {
+        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
+                .withRealmImportFile("./bloggingnetwork-realm.json");
+
+        KEYCLOAK.start();
+    }
+
+    @DynamicPropertySource
+    static void configKeycloak(DynamicPropertyRegistry registry) {
+        registry.add("app.keycloak.serverUrl", KEYCLOAK::getAuthServerUrl);
+    }
 
     @Autowired
     private KeycloakAdminClientImpl keycloakAdminClient;
+
+    @Test
+    void contextLoads() {
+        Assertions.assertThat(this.keycloakAdminClient).isNotNull();
+    }
 
     @Test
     void givenUserRepresentation_whenCreateUserAndFindById_thenCreatedAndFound() {

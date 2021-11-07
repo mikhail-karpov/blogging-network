@@ -35,7 +35,7 @@ public class KeycloakAdminConfig {
     public Keycloak keycloak() {
         return KeycloakBuilder.builder()
                 .serverUrl(serverUrl)
-                .realm(realm)
+                .realm("master")
                 .clientId("admin-cli")
                 .username(adminUsername)
                 .password(adminPassword)
