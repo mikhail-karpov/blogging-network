@@ -13,9 +13,11 @@ public class AbstractIT {
 
     static {
         RABBIT_MQ_CONTAINER = new RabbitMQContainer("rabbitmq");
-        RABBIT_MQ_CONTAINER.start();
 
-        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2");
+        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
+                .withRealmImportFile("/userfeed-realm.json");
+
+        RABBIT_MQ_CONTAINER.start();
         KEYCLOAK.start();
     }
 
@@ -26,7 +28,7 @@ public class AbstractIT {
 
     @DynamicPropertySource
     static void configJwtIssuer(DynamicPropertyRegistry registry) {
-        registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri",
-                () -> String.format("%s/realms/master", KEYCLOAK.getAuthServerUrl()));
+        registry.add("keycloak.serverUrl", KEYCLOAK::getAuthServerUrl);
+        registry.add("keycloak.realm", () -> "userfeed");
     }
 }
