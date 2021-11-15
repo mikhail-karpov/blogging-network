@@ -146,7 +146,7 @@ class PostCommentControllerTest extends AbstractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(comment.getId().toString()))
                 .andExpect(jsonPath("$.comment").value(comment.getContent()))
-                .andExpect(jsonPath("$.createdDate").value(comment.getCreatedDate().toString()))
+                .andExpect(jsonPath("$.createdDate").isNotEmpty())
                 .andExpect(jsonPath("$.user.userId").value("user1"))
                 .andExpect(jsonPath("$.user.username").value("username"));
 

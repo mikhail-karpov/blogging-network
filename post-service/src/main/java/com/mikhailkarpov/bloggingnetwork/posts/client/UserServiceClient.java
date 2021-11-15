@@ -8,16 +8,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.Optional;
 
-@FeignClient(
-        name = "user-service",
-        decode404 = true
-        ,
-        fallback = UserServiceClientFallback.class
-)
+@FeignClient(name = "user-service", decode404 = true, fallback = UserServiceClientFallback.class)
 public interface UserServiceClient {
 
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/users/{id}/profile")
+    @RequestMapping(method = RequestMethod.GET, value = "/users/{id}/profile", consumes = "application/json")
     Optional<UserProfileDto> findById(@PathVariable("id") String userId);
 }
