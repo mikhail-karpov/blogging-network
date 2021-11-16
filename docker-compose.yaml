@@ -76,6 +76,8 @@ services:
     container_name: post-service
     environment:
       - CONFIG_URI=http://config:8888
+      - CLIENT_ID=post-service
+      - CLIENT_SECRET=14feda15-2dff-4b5e-83c1-e822c45f896d
     depends_on:
       - config
       - keycloak
@@ -87,6 +89,8 @@ services:
     container_name: user-feed-service
     environment:
       - CONFIG_URI=http://config:8888
+      - CLIENT_ID=user-feed-service
+      - CLIENT_SECRET=533f8bc6-3da6-4904-863e-11c7c56c8aa3
     depends_on:
       - config
       - keycloak

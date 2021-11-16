@@ -1,13 +1,7 @@
-spring:
-  security:
-    oauth2:
-      client:
-        registration:
-          keycloak:
-            client-id: post-service
-            client-secret: 218c1852-c294-4063-8137-d3ef2d58a279
-            authorization-grant-type: client_credentials
-
 feign:
   circuitbreaker:
     enabled: true
+
+logging:
+  level:
+    com.mikhailkarpov.bloggingnetwork.posts.client.UserServiceClient: DEBUG
