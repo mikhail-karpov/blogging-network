@@ -7,13 +7,16 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.Authentication;
 
 @Configuration
@@ -23,6 +26,28 @@ public class RabbitMQConfig {
     public static final String POST_EVENT_QUEUE = "post-event-queue";
     public static final String POST_CREATED_ROUTING_KEY = "post.created";
     public static final String POST_DELETED_ROUTING_KEY = "post.deleted";
+
+    @Bean
+    @Primary
+    public ConnectionFactory connectionFactory(RabbitProperties rabbitProperties) {
+        String host = rabbitProperties.getHost();
+        Integer port = rabbitProperties.getPort();
+        String username = rabbitProperties.getUsername();
+        String password = rabbitProperties.getPassword();
+
+        CachingConnectionFactory connectionFactory = new CachingConnectionFactory(host, port);
+
+        if (username != null) {
+            connectionFactory.setUsername(username);
+        }
+
+        if (password != null) {
+            connectionFactory.setPassword(password);
+        }
+
+        return connectionFactory;
+    }
+
 
     @Bean
     public TopicExchange postExchange() {

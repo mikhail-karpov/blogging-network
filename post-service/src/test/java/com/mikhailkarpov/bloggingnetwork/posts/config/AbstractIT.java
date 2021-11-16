@@ -16,8 +16,11 @@ public abstract class AbstractIT {
     static final RabbitMQContainer RABBIT_MQ_CONTAINER;
 
     static {
-        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2");
-        RABBIT_MQ_CONTAINER = new RabbitMQContainer("rabbitmq").withExposedPorts(5672);
+        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
+                .withRealmImportFile("/test-realm.json");
+
+        RABBIT_MQ_CONTAINER = new RabbitMQContainer("rabbitmq")
+                .withExposedPorts(5672);
 
         KEYCLOAK.start();
         RABBIT_MQ_CONTAINER.start();
@@ -26,7 +29,7 @@ public abstract class AbstractIT {
     @DynamicPropertySource
     static void configKeycloak(DynamicPropertyRegistry registry) {
         registry.add("app.keycloak.serverUrl", KEYCLOAK::getAuthServerUrl);
-        registry.add("app.keycloak.realm", () -> "master");
+        registry.add("app.keycloak.realm", () -> "test");
         registry.add("app.keycloak.user", KEYCLOAK::getAdminUsername);
         registry.add("app.keycloak.password", KEYCLOAK::getAdminPassword);
     }

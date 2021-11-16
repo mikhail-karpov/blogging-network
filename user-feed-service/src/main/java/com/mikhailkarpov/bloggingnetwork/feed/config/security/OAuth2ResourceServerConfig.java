@@ -12,15 +12,14 @@ public class OAuth2ResourceServerConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         //@formatter:off
         http
-                .csrf()
-                .disable()
-                .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
+                .csrf().disable()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 .authorizeRequests(auth -> auth
                         .antMatchers("/feed/**").authenticated())
-                .oauth2ResourceServer()
-                .jwt();
+                .oauth2Client().and()
+                .formLogin().disable()
+                .logout().disable()
+                .oauth2ResourceServer().jwt();
         //@formatter:on
     }
 }

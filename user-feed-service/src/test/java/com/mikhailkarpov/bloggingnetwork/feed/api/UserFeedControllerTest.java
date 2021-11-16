@@ -1,21 +1,23 @@
 package com.mikhailkarpov.bloggingnetwork.feed.api;
 
 import com.mikhailkarpov.bloggingnetwork.feed.config.JwtDecoderTestConfig;
-import com.mikhailkarpov.bloggingnetwork.feed.domain.PostActivity;
-import com.mikhailkarpov.bloggingnetwork.feed.services.PostActivityService;
+import com.mikhailkarpov.bloggingnetwork.feed.dto.Post;
+import com.mikhailkarpov.bloggingnetwork.feed.dto.UserProfile;
+import com.mikhailkarpov.bloggingnetwork.feed.services.UserFeedService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,23 +36,30 @@ class UserFeedControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private PostActivityService postActivityService;
+    private UserFeedService userFeedService;
 
     @Autowired
-    private JacksonTester<List<PostActivity>> activityTester;
+    private JacksonTester<List<Post>> postsTester;
 
     @Test
     void givenJwt_whenGetUserFeed_thenOk() throws Exception {
         //given
         String userId = "user-id";
-        List<PostActivity> activities = Arrays.asList(
-                new PostActivity("user1", "post1"),
-                new PostActivity("user2", "post2")
+        List<Post> posts = Arrays.asList(
+                Post.builder()
+                        .id("post1")
+                        .content("Post 1 content")
+                        .user(new UserProfile("user1", "username1"))
+                        .createdDate(LocalDateTime.now().minus(1L, ChronoUnit.DAYS))
+                        .build(),
+                Post.builder()
+                        .id("post2")
+                        .content("Post 2 content")
+                        .user(new UserProfile("user2", "username2"))
+                        .createdDate(LocalDateTime.now().minus(2L, ChronoUnit.DAYS))
+                        .build()
         );
-        PageRequest pageRequest = PageRequest.of(1, 2);
-
-        when(this.postActivityService.getFeed(userId, pageRequest))
-                .thenReturn(new PageImpl<>(activities, pageRequest, 4L));
+        when(this.userFeedService.getUserFeed(userId, PageRequest.of(1, 2))).thenReturn(posts);
 
         //when
         MockHttpServletResponse response = this.mockMvc.perform(get("/feed?page=1&size=2")
@@ -59,7 +68,7 @@ class UserFeedControllerTest {
 
         //then
         assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(response.getContentAsString()).isEqualTo(activityTester.write(activities).getJson());
+        assertThat(response.getContentAsString()).isEqualTo(postsTester.write(posts).getJson());
     }
 
     @Test
@@ -69,6 +78,6 @@ class UserFeedControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized());
 
         //then
-        verifyNoInteractions(this.postActivityService);
+        verifyNoInteractions(this.userFeedService);
     }
 }

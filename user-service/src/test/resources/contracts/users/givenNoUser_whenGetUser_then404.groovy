@@ -10,9 +10,6 @@ Contract.make {
     request {
         method(GET())
         url('/users/0/profile')
-        headers {
-            header(accept(), applicationJson())
-        }
     }
     response {
         status(NOT_FOUND())

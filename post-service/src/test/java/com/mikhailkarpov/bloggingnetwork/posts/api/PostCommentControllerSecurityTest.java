@@ -5,6 +5,7 @@ import com.mikhailkarpov.bloggingnetwork.posts.service.PostCommentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -42,12 +43,12 @@ class PostCommentControllerSecurityTest extends AbstractControllerTest {
     @Test
     void givenNoAuthority_whenDeleteComment_thenForbidden() throws Exception {
         //given
-        PostComment comment = new PostComment("not owner", "Post comment");
+        PostComment comment = new PostComment("owner", "Post comment");
         when(postCommentService.findById(id)).thenReturn(Optional.of(comment));
 
         //when
         mockMvc.perform(delete("/posts/{id}/comments/{commentId}", id, id)
-                        .header("Authorization", "Bearer token"))
+                        .with(SecurityMockMvcRequestPostProcessors.jwt().jwt(jwt -> jwt.subject("not owner"))))
                 .andExpect(status().isForbidden());
 
         verify(postCommentService).findById(id);

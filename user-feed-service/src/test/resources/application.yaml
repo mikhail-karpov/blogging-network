@@ -4,10 +4,33 @@ spring:
       enabled: false
   security:
     oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: user-feed-service
+            client-secret: b1ddf50a-b599-4345-947a-9e3591001bb6
+            authorization-grant-type: client_credentials
+            scope: profile
+        provider:
+          keycloak:
+            authorization-uri: ${keycloak.serverUrl}/realms/${keycloak.realm}/protocol/openid-connect/authorize
+            token-uri: ${keycloak.serverUrl}/realms/${keycloak.realm}/protocol/openid-connect/token
       resourceserver:
         jwt:
-          issuer-uri: https://keycloak/auth/realms/master
+          issuer-uri: ${keycloak.serverUrl}/realms/${keycloak.realm}
 
 eureka:
   client:
     enabled: false
+
+keycloak:
+  serverUrl: http://keycloak/auth
+  realm: userfeed
+
+feign:
+  circuitbreaker:
+    enabled: true
+
+logging:
+  level:
+    com.mikhailkarpov.bloggingnetwork.feed.client.UserServiceClient: DEBUG

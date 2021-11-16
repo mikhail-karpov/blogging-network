@@ -1,12 +1,8 @@
 package com.mikhailkarpov.bloggingnetwork.posts.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mikhailkarpov.bloggingnetwork.posts.config.DtoMapperConfig;
-import com.mikhailkarpov.bloggingnetwork.posts.config.TestSecurityConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.PostComment;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.CreatePostCommentRequest;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.PagedResult;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.PostCommentDto;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.service.PostCommentService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -15,20 +11,15 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -37,78 +28,56 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = PostCommentController.class)
-@ContextConfiguration(classes = {DtoMapperConfig.class, TestSecurityConfig.class})
-@AutoConfigureJsonTesters
-class PostCommentControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class PostCommentControllerTest extends AbstractControllerTest {
 
     @MockBean
-    private PostCommentService postCommentService;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private JacksonTester<PostCommentDto> dtoTester;
-
-    @Autowired
-    private JacksonTester<PagedResult<PostCommentDto>> pagedResultTester;
+    PostCommentService postCommentService;
 
     @Captor
     private ArgumentCaptor<PostComment> commentArgumentCaptor;
 
-    private final CreatePostCommentRequest request = new CreatePostCommentRequest("Post comment");
-    private final UUID postId = UUID.randomUUID();
-    private final String userId = TestSecurityConfig.SUBJECT;
-    private final PostComment postComment = new PostComment(userId, "Post comment");
-    private final PostCommentDto postCommentDto =
-            new PostCommentDto(postComment.getId().toString(), userId, "Post comment", postComment.getCreatedDate());
-
     @Test
-    void givenCreatePostCommentRequest_whenPostComment_thenCreated() throws Exception {
+    void givenRequest_whenPostComment_thenCreated() throws Exception {
         //given
-        String expectedLocation = "http://localhost/posts/" + postId + "/comments/" + postComment.getId().toString();
+        String userId = "user-id";
+        UUID postId = UUID.randomUUID();
+        PostComment postComment = new PostComment(userId, "post comment");
+        String expectedLocation = "http://localhost/posts/" + postId + "/comments/" + postComment.getId();
+
         when(postCommentService.addComment(any(), any())).thenReturn(postComment);
 
         //when
-        String uri = "/posts/{id}/comments";
-        MockHttpServletResponse response = mockMvc.perform(post(uri, postId)
-                        .header("Authorization", "Bearer token")
+        mockMvc.perform(post("/posts/{id}/comments", postId)
+                        .with(jwt().jwt(jwt -> jwt.subject(userId)))
                         .contentType(APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andReturn()
-                .getResponse();
+                        .content(objectMapper.writeValueAsString(new CreatePostCommentRequest("comment"))))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", expectedLocation));
 
         //then
-        assertThat(response.getStatus()).isEqualTo(201);
-        assertThat(response.getHeader("Location")).isEqualTo(expectedLocation);
-        assertThat(response.getContentAsString()).isEqualTo(dtoTester.write(postCommentDto).getJson());
-
         verify(postCommentService).addComment(eq(postId), commentArgumentCaptor.capture());
         assertThat(commentArgumentCaptor.getValue().getUserId()).isEqualTo(userId);
-        assertThat(commentArgumentCaptor.getValue().getContent()).isEqualTo(request.getComment());
+        assertThat(commentArgumentCaptor.getValue().getContent()).isEqualTo("comment");
     }
 
     @ParameterizedTest
     @NullSource
     @MethodSource("getInvalidCommentRequest")
     void givenInvalidRequest_whenPostComment_thenBadRequest(CreatePostCommentRequest request) throws Exception {
+        //given
+        UUID postId = UUID.randomUUID();
+
         //when
-        String uri = "/posts/{id}/comments";
-        MockHttpServletResponse response = mockMvc.perform(post(uri, postId)
-                        .header("Authorization", "Bearer token")
+        mockMvc.perform(post("/posts/{id}/comments", postId)
+                        .with(jwt())
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andReturn()
-                .getResponse();
-
-        //then
-        assertThat(response.getStatus()).isEqualTo(400);
+                .andExpect(status().isBadRequest());
     }
 
     private static Stream<Arguments> getInvalidCommentRequest() {
@@ -123,43 +92,66 @@ class PostCommentControllerTest {
     @Test
     void givenComments_whenGetCommentsByPostId_thenOk() throws Exception {
         //given
-        PageRequest pageRequest = PageRequest.of(1, 3);
+        UUID postId = UUID.randomUUID();
+        PageRequest pageRequest = PageRequest.of(1, 2);
+        List<PostComment> comments = Arrays.asList(
+                new PostComment("user1", "comment1"),
+                new PostComment("user2", "comment2")
+        );
         Page<PostComment> postCommentPage =
-                new PageImpl<>(Collections.singletonList(postComment), pageRequest, 10L);
-        PagedResult<PostCommentDto> expectedPagedResult =
-                new PagedResult<>(new PageImpl<>(Collections.singletonList(postCommentDto), pageRequest, 10L));
+                new PageImpl<>(comments, pageRequest, 10L);
+
         when(postCommentService.findAllByPostId(postId, pageRequest)).thenReturn(postCommentPage);
+        when(userService.getUserById("user1")).thenReturn(new UserProfileDto("user1", "username1"));
+        when(userService.getUserById("user2")).thenReturn(new UserProfileDto("user2", "username2"));
 
         //when
-        String uri = "/posts/{postId}/comments?page={page}&size={size}";
-        MockHttpServletResponse response = mockMvc.perform(get(uri, postId, 1, 3)
-                        .header("Authorization", "Bearer token"))
-                .andReturn()
-                .getResponse();
+        mockMvc.perform(get("/posts/{postId}/comments?page={page}&size={size}", postId, 1, 2)
+                        .with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.totalPages").value(5))
+                .andExpect(jsonPath("$.totalResults").value(10))
+                .andExpect(jsonPath("$.result").isArray())
+                .andExpect(jsonPath("$.result.size()").value(2))
+                .andExpect(jsonPath("$.result[0].id").isNotEmpty())
+                .andExpect(jsonPath("$.result[0].comment").value("comment1"))
+                .andExpect(jsonPath("$.result[0].createdDate").isNotEmpty())
+                .andExpect(jsonPath("$.result[0].user.userId").value("user1"))
+                .andExpect(jsonPath("$.result[0].user.username").value("username1"))
+                .andExpect(jsonPath("$.result[1].id").isNotEmpty())
+                .andExpect(jsonPath("$.result[1].comment").value("comment2"))
+                .andExpect(jsonPath("$.result[1].createdDate").isNotEmpty())
+                .andExpect(jsonPath("$.result[1].user.userId").value("user2"))
+                .andExpect(jsonPath("$.result[1].user.username").value("username2"));
 
         //then
-        assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(response.getContentAsString()).isEqualTo(pagedResultTester.write(expectedPagedResult).getJson());
         verify(postCommentService).findAllByPostId(postId, pageRequest);
+        verify(userService).getUserById("user1");
+        verify(userService).getUserById("user2");
     }
 
     @Test
     void givenComment_whenGetCommentById_thenOk() throws Exception {
         //given
-        UUID commentId = postComment.getId();
-        when(postCommentService.findById(commentId)).thenReturn(Optional.of(postComment));
+        PostComment comment = new PostComment("user1", "comment");
+        UserProfileDto user = new UserProfileDto("user1", "username");
+
+        when(postCommentService.findById(comment.getId())).thenReturn(Optional.of(comment));
+        when(userService.getUserById(user.getUserId())).thenReturn(user);
 
         //when
-        String uri = "/posts/{postId}/comments/{commentId}";
-        MockHttpServletResponse response = mockMvc.perform(get(uri, postId, commentId)
-                        .header("Authorization", "Bearer token"))
-                .andReturn()
-                .getResponse();
+        mockMvc.perform(get("/posts/{postId}/comments/{commentId}", UUID.randomUUID(), comment.getId())
+                        .with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(comment.getId().toString()))
+                .andExpect(jsonPath("$.comment").value(comment.getContent()))
+                .andExpect(jsonPath("$.createdDate").isNotEmpty())
+                .andExpect(jsonPath("$.user.userId").value("user1"))
+                .andExpect(jsonPath("$.user.username").value("username"));
 
         //then
-        assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(response.getContentAsString()).isEqualTo(dtoTester.write(postCommentDto).getJson());
-        verify(postCommentService).findById(commentId);
+        verify(postCommentService).findById(comment.getId());
     }
 
     @Test
@@ -169,34 +161,29 @@ class PostCommentControllerTest {
         when(postCommentService.findById(commentId)).thenReturn(Optional.empty());
 
         //when
-        String uri = "/posts/{postId}/comments/{commentId}";
-        MockHttpServletResponse response = mockMvc.perform(get(uri, postId, commentId)
-                        .header("Authorization", "Bearer token"))
-                .andReturn()
-                .getResponse();
+        mockMvc.perform(get("/posts/{postId}/comments/{commentId}", UUID.randomUUID(), commentId)
+                        .with(jwt()))
+                .andExpect(status().isNotFound());
 
         //then
-        assertThat(response.getStatus()).isEqualTo(404);
         verify(postCommentService).findById(commentId);
     }
 
     @Test
     void givenComment_whenDelete_thenNoContent() throws Exception {
         //given
-        UUID commentId = postComment.getId();
-        when(postCommentService.findById(commentId)).thenReturn(Optional.of(postComment));
+        PostComment comment = new PostComment("user-id", "comment");
+        when(postCommentService.findById(comment.getId())).thenReturn(Optional.of(comment));
 
         //when
-        String uri = "/posts/{postId}/comments/{commentId}";
-        MockHttpServletResponse response = mockMvc.perform(delete(uri, postId, commentId)
-                        .header("Authorization", "Bearer token"))
-                .andReturn()
-                .getResponse();
+        UUID postId = UUID.randomUUID();
+        mockMvc.perform(delete("/posts/{postId}/comments/{commentId}", postId, comment.getId())
+                        .with(jwt().jwt(jwt -> jwt.subject("user-id"))))
+                .andExpect(status().isNoContent());
 
         //then
-        assertThat(response.getStatus()).isEqualTo(204);
-        verify(postCommentService).findById(commentId);
-        verify(postCommentService).removeComment(postId, commentId);
+        verify(postCommentService).findById(comment.getId());
+        verify(postCommentService).removeComment(postId, comment.getId());
     }
 
     @Test
@@ -206,14 +193,11 @@ class PostCommentControllerTest {
         when(postCommentService.findById(commentId)).thenReturn(Optional.empty());
 
         //when
-        String uri = "/posts/{postId}/comments/{commentId}";
-        MockHttpServletResponse response = mockMvc.perform(delete(uri, postId, commentId)
-                        .header("Authorization", "Bearer token"))
-                .andReturn()
-                .getResponse();
+        mockMvc.perform(delete("/posts/{postId}/comments/{commentId}", UUID.randomUUID(), commentId)
+                        .with(jwt()))
+                .andExpect(status().isNotFound());
 
         //then
-        assertThat(response.getStatus()).isEqualTo(404);
         verify(postCommentService).findById(commentId);
         verifyNoMoreInteractions(postCommentService);
     }

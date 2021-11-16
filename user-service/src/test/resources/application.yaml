@@ -10,6 +10,6 @@ eureka:
 app:
   keycloak:
     serverUrl: http://localhost:8090/auth
-    realm: master
+    realm: bloggingnetwork
     adminUsername: admin
     adminPassword: admin

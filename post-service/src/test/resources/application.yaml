@@ -5,6 +5,36 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: post-service
+            client-secret: d7d368f2-dc6c-46a3-9c1d-8d370ee35f38
+            authorization-grant-type: client_credentials
+            scope: openid
+        provider:
+          keycloak:
+            authorization-uri: ${app.keycloak.serverUrl}/realms/${app.keycloak.realm}/protocol/openid-connect/authorize
+            token-uri: ${app.keycloak.serverUrl}/realms/${app.keycloak.realm}/protocol/openid-connect/token
+      resourceserver:
+        jwt:
+          issuer-uri: ${app.keycloak.serverUrl}/realms/${app.keycloak.realm}
+
+app:
+  keycloak:
+    serverUrl: http://localhost:8090/auth
+    realm: master
+
 eureka:
   client:
     enabled: false
+
+feign:
+  circuitbreaker:
+    enabled: true
+
+logging:
+  level:
+    com.mikhailkarpov.bloggingnetwork.posts.client.UserServiceClient: DEBUG
