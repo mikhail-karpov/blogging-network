@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.*;
 import java.time.Instant;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.mikhailkarpov.bloggingnetwork.feed.domain.ActivityType.FOLLOWING_ACTIVITY;
@@ -45,7 +46,7 @@ public class PostActivityServiceImpl implements PostActivityService {
 
     @Override
     @Transactional(readOnly = true)
-    public Iterable<PostActivity> getFeed(String userId, Pageable pageable) {
+    public List<PostActivity> getFeed(String userId, Pageable pageable) {
 
         CriteriaBuilder cb = this.entityManager.getCriteriaBuilder();
 
@@ -67,14 +68,14 @@ public class PostActivityServiceImpl implements PostActivityService {
                         cb.greaterThan(root.get("createdDate"), Instant.now().minus(7L, DAYS)))
                 .orderBy(cb.asc(root.get("createdDate")));
 
-        int firstResult = pageable != null ? new Long(pageable.getOffset()).intValue() : 0;
+        int firstResult = pageable != null ? pageable.getPageNumber() * pageable.getPageSize() : 0;
         int maxResults = pageable != null ? pageable.getPageSize() : 20;
 
         return this.entityManager.createQuery(cq)
                 .setFirstResult(firstResult)
                 .setMaxResults(maxResults)
                 .getResultStream()
-                .map(entity -> new PostActivity(entity.getUserId(), entity.getSourceId()))
+                .map(entity -> new PostActivity(entity.getSourceId(), entity.getUserId()))
                 .collect(Collectors.toList());
     }
 }
