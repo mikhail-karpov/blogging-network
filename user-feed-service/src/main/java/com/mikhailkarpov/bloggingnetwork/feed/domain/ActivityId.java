@@ -17,13 +17,13 @@ public class ActivityId implements Serializable {
 
     private static final long serialVersionUID = 5923132376167657703L;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = false, updatable = false)
     private String userId;
 
-    @Column(name = "source_id", nullable = false)
+    @Column(name = "source_id", nullable = false, updatable = false)
     private String sourceId;
 
-    @Column(name = "activity_type", nullable = false)
+    @Column(name = "activity_type", nullable = false, updatable = false)
     @Enumerated(EnumType.STRING)
     private ActivityType type;
 

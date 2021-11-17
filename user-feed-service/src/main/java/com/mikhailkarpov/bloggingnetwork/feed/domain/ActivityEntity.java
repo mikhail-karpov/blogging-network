@@ -2,25 +2,27 @@ package com.mikhailkarpov.bloggingnetwork.feed.domain;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
+import javax.persistence.*;
 import java.time.Instant;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
+@Table(name = "activity")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ActivityEntity {
 
     @EmbeddedId
     private ActivityId id;
 
-    @Column(name = "created_date")
+    @Column(name = "created_date", nullable = false, updatable = false)
+    @CreatedDate
     private Instant createdDate;
 
     public ActivityEntity(String userId, String sourceId, ActivityType type) {
         this.id = new ActivityId(userId, sourceId, type);
-        this.createdDate = Instant.now();
     }
 
     public String getUserId() {
