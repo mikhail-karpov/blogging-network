@@ -21,6 +21,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -78,7 +79,7 @@ public class PostCommentController {
         String id = postComment.getId().toString();
         String userId = postComment.getUserId();
         String content = postComment.getContent();
-        LocalDateTime createdDate = postComment.getCreatedDate();
+        Instant createdDate = postComment.getCreatedDate();
 
         UserProfileDto user = this.userService.getUserById(postComment.getUserId());
 

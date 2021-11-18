@@ -78,11 +78,25 @@ services:
       - CONFIG_URI=http://config:8888
       - CLIENT_ID=post-service
       - CLIENT_SECRET=14feda15-2dff-4b5e-83c1-e822c45f896d
+      - POSTGRES_URL=jdbc:postgresql://post-service-db:5432/post_service
+      - POSTGRES_USER=${POST_SERVICE_DB_USER}
+      - POSTGRES_PASSWORD=${POST_SERVICE_DB_PASSWORD}
     depends_on:
       - config
       - keycloak
       - rabbitmq
     restart: unless-stopped
+
+  post-service-db:
+    image: postgres
+    container_name: post-service-db
+    environment:
+      - POSTGRES_DB=post_service
+      - POSTGRES_USER=${POST_SERVICE_DB_USER}
+      - POSTGRES_PASSWORD=${POST_SERVICE_DB_PASSWORD}
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
 
   user-feed-service:
     build: ./user-feed-service

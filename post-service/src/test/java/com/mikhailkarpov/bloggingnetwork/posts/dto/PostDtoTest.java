@@ -7,7 +7,7 @@ import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.json.JsonContent;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,8 +16,6 @@ class PostDtoTest {
 
     @Autowired
     private JacksonTester<PostDto> jacksonTester;
-    private final LocalDateTime dateTime =
-            LocalDateTime.of(2020, 3, 31, 6, 55, 2);
 
     @Test
     void testSerialize() throws IOException {
@@ -26,7 +24,7 @@ class PostDtoTest {
                 .id("postId")
                 .user(new UserProfileDto("user", "username"))
                 .content("Post content")
-                .createdDate(dateTime)
+                .createdDate(Instant.parse("2020-03-31T06:55:02.00Z"))
                 .build();
 
         //when
@@ -37,7 +35,7 @@ class PostDtoTest {
         assertThat(json).extractingJsonPathStringValue("$.user.userId").isEqualTo("user");
         assertThat(json).extractingJsonPathStringValue("$.user.username").isEqualTo("username");
         assertThat(json).extractingJsonPathStringValue("$.content").isEqualTo("Post content");
-        assertThat(json).extractingJsonPathStringValue("$.createdDate").isEqualTo("2020-03-31T06:55:02");
+        assertThat(json).extractingJsonPathStringValue("$.createdDate").isEqualTo("2020-03-31T06:55:02Z");
     }
 
     @Test
@@ -47,7 +45,7 @@ class PostDtoTest {
                 "\"id\":\"postId\", " +
                 "\"user\":{\"userId\":\"user-id\", \"username\":\"user\"}, " +
                 "\"content\":\"Post content\" ," +
-                "\"createdDate\":\"2020-03-31T06:55:02\"" +
+                "\"createdDate\":\"2020-03-31T06:55:02Z\"" +
                 "}";
 
         //when
@@ -58,6 +56,6 @@ class PostDtoTest {
         assertThat(dto.getUser().getUserId()).isEqualTo("user-id");
         assertThat(dto.getUser().getUsername()).isEqualTo("user");
         assertThat(dto.getContent()).isEqualTo("Post content");
-        assertThat(dto.getCreatedDate()).isEqualTo(dateTime);
+        assertThat(dto.getCreatedDate()).isEqualTo(Instant.parse("2020-03-31T06:55:02.00Z"));
     }
 }
