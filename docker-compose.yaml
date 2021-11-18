@@ -64,12 +64,27 @@ services:
       - CONFIG_URI=http://config:8888
       - KEYCLOAK_USER=${KEYCLOAK_USER}
       - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD}
+      - POSTGRES_URL=jdbc:postgresql://user-service-db:5432/user_service
+      - POSTGRES_USER=${USER_SERVICE_DB_USER}
+      - POSTGRES_PASSWORD=${USER_SERVICE_DB_PASSWORD
     depends_on:
       - config
+      - user-service-db
       - keycloak
       - redis
       - rabbitmq
     restart: unless-stopped
+
+  user-service-db:
+    image: postgres
+    container_name: user-service-db
+    environment:
+      - POSTGRES_DB=user_service
+      - POSTGRES_USER=${USER_SERVICE_DB_USER}
+      - POSTGRES_PASSWORD=${USER_SERVICE_DB_PASSWORD}
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
 
   post-service:
     build: ./post-service
@@ -85,6 +100,7 @@ services:
       - config
       - keycloak
       - rabbitmq
+      - post-service-db
     restart: unless-stopped
 
   post-service-db:

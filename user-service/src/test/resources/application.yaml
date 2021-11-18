@@ -3,6 +3,11 @@ spring:
     config:
       enabled: false
 
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
 eureka:
   client:
     enabled: false

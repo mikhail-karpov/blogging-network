@@ -5,13 +5,3 @@ feign:
 logging:
   level:
     com.mikhailkarpov.bloggingnetwork.feed.client.PostServiceClient: DEBUG
-
-spring:
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
-  datasource:
-    url: ${POSTGRES_URL}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}

@@ -2,6 +2,15 @@ spring:
   cache:
     type: redis
 
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  datasource:
+    url: ${POSTGRES_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
   redis:
     host: redis
     port: 6379
