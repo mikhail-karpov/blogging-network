@@ -3,15 +3,19 @@ package com.mikhailkarpov.bloggingnetwork.posts.domain;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import java.util.*;
 
-import static javax.persistence.CascadeType.*;
-import static javax.persistence.FetchType.*;
+import static javax.persistence.CascadeType.ALL;
+import static javax.persistence.FetchType.LAZY;
 
 @Entity
+@Table(name = "post")
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // for JPA
-public class Post extends AuthorEntity {
+public class Post extends BaseEntity {
 
     @Column(name = "content", nullable = false)
     private String content;

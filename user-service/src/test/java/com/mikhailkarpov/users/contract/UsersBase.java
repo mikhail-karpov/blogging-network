@@ -1,5 +1,6 @@
 package com.mikhailkarpov.users.contract;
 
+import com.mikhailkarpov.users.api.UserController;
 import com.mikhailkarpov.users.config.SecurityTestConfig;
 import com.mikhailkarpov.users.domain.UserProfile;
 import com.mikhailkarpov.users.service.UserService;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -22,12 +24,8 @@ import java.util.UUID;
 import static org.mockito.AdditionalMatchers.not;
 
 @WithMockUser
+@WebMvcTest(controllers = UserController.class)
 @ContextConfiguration(classes = SecurityTestConfig.class)
-@SpringBootTest(properties = {
-        "stubrunner.amqp.enabled=true",
-        "stubrunner.amqp.mockConnection=false",
-        "spring.main.allow-bean-definition-overriding=true"
-})
 public class UsersBase {
 
     @MockBean

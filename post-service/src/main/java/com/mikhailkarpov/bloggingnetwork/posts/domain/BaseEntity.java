@@ -3,17 +3,20 @@ package com.mikhailkarpov.bloggingnetwork.posts.domain;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.Column;
+import javax.persistence.EntityListeners;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
 @MappedSuperclass
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class AuthorEntity {
+@EntityListeners(AuditingEntityListener.class)
+public abstract class BaseEntity {
 
     @Id
     private UUID id;
@@ -22,12 +25,11 @@ public abstract class AuthorEntity {
     private String userId;
 
     @CreatedDate
-    private LocalDateTime createdDate;
+    private Instant createdDate;
 
-    protected AuthorEntity(String userId) {
+    protected BaseEntity(String userId) {
         setId(UUID.randomUUID());
         setUserId(userId);
-        this.createdDate = LocalDateTime.now();
     }
 
     protected void setId(UUID id) {
@@ -46,7 +48,7 @@ public abstract class AuthorEntity {
         return userId;
     }
 
-    public LocalDateTime getCreatedDate() {
+    public Instant getCreatedDate() {
         return createdDate;
     }
 
@@ -56,10 +58,12 @@ public abstract class AuthorEntity {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
-        AuthorEntity that = (AuthorEntity) o;
+        BaseEntity that = (BaseEntity) o;
 
         return id.equals(that.id);
     }

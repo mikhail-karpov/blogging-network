@@ -2,6 +2,12 @@ spring:
   cloud:
     config:
       enabled: false
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
   security:
     oauth2:
       client:
@@ -11,10 +17,12 @@ spring:
             client-secret: b1ddf50a-b599-4345-947a-9e3591001bb6
             authorization-grant-type: client_credentials
             scope: profile
+
         provider:
           keycloak:
             authorization-uri: ${keycloak.serverUrl}/realms/${keycloak.realm}/protocol/openid-connect/authorize
             token-uri: ${keycloak.serverUrl}/realms/${keycloak.realm}/protocol/openid-connect/token
+
       resourceserver:
         jwt:
           issuer-uri: ${keycloak.serverUrl}/realms/${keycloak.realm}

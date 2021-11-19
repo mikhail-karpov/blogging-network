@@ -32,17 +32,33 @@ services:
     restart: unless-stopped
 
   keycloak:
-    image: jboss/keycloak:15.0.2
+    build: ./keycloak
     container_name: keycloak
     environment:
       - KEYCLOAK_USER=${KEYCLOAK_USER}
       - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD}
-      - KEYCLOAK_IMPORT=/keycloak/bloggingnetwork-realm.json
-    volumes:
-      - ./keycloak/bloggingnetwork-realm.json:/keycloak/bloggingnetwork-realm.json
+      - DB_VENDOR=POSTGRES
+      - DB_ADDR=keycloak-db
+      - DB_DATABASE=keycloak
+      - DB_SCHEMA=public
+      - DB_USER=${KEYCLOAK_DB_USER}
+      - DB_PASSWORD=${KEYCLOAK_DB_PASSWORD}
+    depends_on:
+      - keycloak-db
+    restart: unless-stopped
     ports:
       - "8080:8080"
+
+  keycloak-db:
+    image: postgres
+    container_name: keycloak-db
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=${KEYCLOAK_DB_USER}
+      - POSTGRES_PASSWORD=${KEYCLOAK_DB_PASSWORD}
     restart: unless-stopped
+    ports:
+      - "54320:5432"
 
   redis:
     image: redis
@@ -64,12 +80,27 @@ services:
       - CONFIG_URI=http://config:8888
       - KEYCLOAK_USER=${KEYCLOAK_USER}
       - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD}
+      - POSTGRES_URL=jdbc:postgresql://user-service-db:5432/user_service
+      - POSTGRES_USER=${USER_SERVICE_DB_USER}
+      - POSTGRES_PASSWORD=${USER_SERVICE_DB_PASSWORD}
     depends_on:
       - config
+      - user-service-db
       - keycloak
       - redis
       - rabbitmq
     restart: unless-stopped
+
+  user-service-db:
+    image: postgres
+    container_name: user-service-db
+    environment:
+      - POSTGRES_DB=user_service
+      - POSTGRES_USER=${USER_SERVICE_DB_USER}
+      - POSTGRES_PASSWORD=${USER_SERVICE_DB_PASSWORD}
+    restart: unless-stopped
+    ports:
+      - "54321:5432"
 
   post-service:
     build: ./post-service
@@ -77,12 +108,27 @@ services:
     environment:
       - CONFIG_URI=http://config:8888
       - CLIENT_ID=post-service
-      - CLIENT_SECRET=14feda15-2dff-4b5e-83c1-e822c45f896d
+      - CLIENT_SECRET=9ac2c424-117b-4f69-b853-24c7f2661535
+      - POSTGRES_URL=jdbc:postgresql://post-service-db:5432/post_service
+      - POSTGRES_USER=${POST_SERVICE_DB_USER}
+      - POSTGRES_PASSWORD=${POST_SERVICE_DB_PASSWORD}
     depends_on:
       - config
       - keycloak
       - rabbitmq
+      - post-service-db
     restart: unless-stopped
+
+  post-service-db:
+    image: postgres
+    container_name: post-service-db
+    environment:
+      - POSTGRES_DB=post_service
+      - POSTGRES_USER=${POST_SERVICE_DB_USER}
+      - POSTGRES_PASSWORD=${POST_SERVICE_DB_PASSWORD}
+    restart: unless-stopped
+    ports:
+      - "54322:5432"
 
   user-feed-service:
     build: ./user-feed-service
@@ -90,9 +136,25 @@ services:
     environment:
       - CONFIG_URI=http://config:8888
       - CLIENT_ID=user-feed-service
-      - CLIENT_SECRET=533f8bc6-3da6-4904-863e-11c7c56c8aa3
+      - CLIENT_SECRET=a505c1d6-1a12-40b3-aecc-355304895b99
+      - POSTGRES_URL=jdbc:postgresql://user-feed-db:5432/user_feed
+      - POSTGRES_USER=${USER_FEED_DB_USER}
+      - POSTGRES_PASSWORD=${USER_FEED_DB_PASSWORD}
     depends_on:
       - config
+      - user-feed-db
       - keycloak
       - rabbitmq
+      - service-discovery
     restart: unless-stopped
+
+  user-feed-db:
+    image: postgres
+    container_name: user-feed-db
+    environment:
+      - POSTGRES_DB=user_feed
+      - POSTGRES_USER=${USER_FEED_DB_USER}
+      - POSTGRES_PASSWORD=${USER_FEED_DB_PASSWORD}
+    restart: unless-stopped
+    ports:
+      - "54323:5432"

@@ -6,8 +6,9 @@ import lombok.NoArgsConstructor;
 import javax.persistence.*;
 
 @Entity
+@Table(name = "post_comment")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class PostComment extends AuthorEntity {
+public class PostComment extends BaseEntity {
 
     @Column(name = "content", nullable = false)
     private String content;

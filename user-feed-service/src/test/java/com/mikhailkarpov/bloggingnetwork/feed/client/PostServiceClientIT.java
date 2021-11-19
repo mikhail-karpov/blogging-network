@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = MockPostServiceConfig.class)
-class PostServiceClientTest extends AbstractIT {
+class PostServiceClientIT extends AbstractIT {
 
     @Autowired
     private List<WireMockServer> services;

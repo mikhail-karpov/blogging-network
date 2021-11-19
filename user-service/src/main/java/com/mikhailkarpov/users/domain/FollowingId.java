@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import java.io.Serializable;
 
@@ -14,9 +15,11 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class FollowingId implements Serializable {
 
-    private String followerId;
+    @Column(name = "follower_user_id", nullable = false, updatable = false)
+    private String followerUserId;
 
-    private String userId;
+    @Column(name = "following_user_id", nullable = false, updatable = false)
+    private String followingUserId;
 
     @Override
     public boolean equals(Object o) {
@@ -25,14 +28,14 @@ public class FollowingId implements Serializable {
 
         FollowingId that = (FollowingId) o;
 
-        if (!followerId.equals(that.followerId)) return false;
-        return userId.equals(that.userId);
+        if (!followerUserId.equals(that.followerUserId)) return false;
+        return followingUserId.equals(that.followingUserId);
     }
 
     @Override
     public int hashCode() {
-        int result = followerId.hashCode();
-        result = 31 * result + userId.hashCode();
+        int result = followerUserId.hashCode();
+        result = 31 * result + followingUserId.hashCode();
         return result;
     }
 }

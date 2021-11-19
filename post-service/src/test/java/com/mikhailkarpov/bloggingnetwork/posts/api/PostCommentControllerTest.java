@@ -116,12 +116,10 @@ class PostCommentControllerTest extends AbstractControllerTest {
                 .andExpect(jsonPath("$.result.size()").value(2))
                 .andExpect(jsonPath("$.result[0].id").isNotEmpty())
                 .andExpect(jsonPath("$.result[0].comment").value("comment1"))
-                .andExpect(jsonPath("$.result[0].createdDate").isNotEmpty())
                 .andExpect(jsonPath("$.result[0].user.userId").value("user1"))
                 .andExpect(jsonPath("$.result[0].user.username").value("username1"))
                 .andExpect(jsonPath("$.result[1].id").isNotEmpty())
                 .andExpect(jsonPath("$.result[1].comment").value("comment2"))
-                .andExpect(jsonPath("$.result[1].createdDate").isNotEmpty())
                 .andExpect(jsonPath("$.result[1].user.userId").value("user2"))
                 .andExpect(jsonPath("$.result[1].user.username").value("username2"));
 
@@ -146,7 +144,6 @@ class PostCommentControllerTest extends AbstractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(comment.getId().toString()))
                 .andExpect(jsonPath("$.comment").value(comment.getContent()))
-                .andExpect(jsonPath("$.createdDate").isNotEmpty())
                 .andExpect(jsonPath("$.user.userId").value("user1"))
                 .andExpect(jsonPath("$.user.username").value("username"));
 

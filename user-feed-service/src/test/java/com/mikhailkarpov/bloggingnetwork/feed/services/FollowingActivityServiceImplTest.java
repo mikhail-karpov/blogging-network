@@ -2,58 +2,63 @@ package com.mikhailkarpov.bloggingnetwork.feed.services;
 
 import com.mikhailkarpov.bloggingnetwork.feed.domain.ActivityEntity;
 import com.mikhailkarpov.bloggingnetwork.feed.domain.ActivityId;
-import com.mikhailkarpov.bloggingnetwork.feed.domain.ActivityType;
 import com.mikhailkarpov.bloggingnetwork.feed.domain.FollowingActivity;
 import com.mikhailkarpov.bloggingnetwork.feed.repository.ActivityRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.mikhailkarpov.bloggingnetwork.feed.domain.ActivityType.FOLLOWING_ACTIVITY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 
-@DataJpaTest
+@ExtendWith(MockitoExtension.class)
 class FollowingActivityServiceImplTest {
 
-    @Autowired
+    @Mock
     private ActivityRepository activityRepository;
 
-    @Autowired
-    private TestEntityManager entityManager;
-
+    @InjectMocks
     private FollowingActivityServiceImpl followingActivityService;
 
-    @BeforeEach
-    void setUp() {
-        this.followingActivityService = new FollowingActivityServiceImpl(this.activityRepository);
-    }
+    @Captor
+    private ArgumentCaptor<ActivityEntity> entityCaptor;
+
+    @Captor
+    private ArgumentCaptor<ActivityId> idCaptor;
 
     @Test
     void givenActivity_whenSaved_thenFound() {
         //given
         FollowingActivity activity = new FollowingActivity("follower", "user");
-        ActivityId activityId = new ActivityId("follower", "user", ActivityType.FOLLOWING_ACTIVITY);
 
         //when
         this.followingActivityService.save(activity);
 
         //then
-        assertThat(this.entityManager.find(ActivityEntity.class, activityId)).isNotNull();
+        verify(this.activityRepository).save(entityCaptor.capture());
+        assertThat(entityCaptor.getValue().getUserId()).isEqualTo("follower");
+        assertThat(entityCaptor.getValue().getSourceId()).isEqualTo("user");
+        assertThat(entityCaptor.getValue().getActivityType()).isEqualTo(FOLLOWING_ACTIVITY);
     }
 
     @Test
-    void givenActivity_whenDeleted_thenNotFound() {
+    void givenActivity_whenSavedAndDeleted_thenDeleted() {
         //given
-        ActivityEntity activityEntity = new ActivityEntity("follower", "user", ActivityType.FOLLOWING_ACTIVITY);
-        ActivityId activityId = new ActivityId("follower", "user", ActivityType.FOLLOWING_ACTIVITY);
-        this.entityManager.persistAndFlush(activityEntity);
+        FollowingActivity activity = new FollowingActivity("follower", "user");
 
         //when
-        this.followingActivityService.delete(new FollowingActivity("follower", "user"));
-        ActivityEntity found = this.entityManager.find(ActivityEntity.class, activityId);
+        this.followingActivityService.save(activity);
+        this.followingActivityService.delete(activity);
 
         //then
-        assertThat(this.entityManager.find(ActivityEntity.class, activityId)).isNull();
+        verify(this.activityRepository).deleteById(idCaptor.capture());
+        assertThat(idCaptor.getValue().getUserId()).isEqualTo("follower");
+        assertThat(idCaptor.getValue().getSourceId()).isEqualTo("user");
+        assertThat(idCaptor.getValue().getType()).isEqualTo(FOLLOWING_ACTIVITY);
     }
 }

@@ -1,14 +1,17 @@
 package com.mikhailkarpov.bloggingnetwork.posts.repository;
 
+import com.mikhailkarpov.bloggingnetwork.posts.config.PersistenceTestConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.PostComment;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.util.EntityUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.ContextConfiguration;
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
 import java.util.Optional;
@@ -17,6 +20,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ContextConfiguration(classes = PersistenceTestConfig.class)
 class PostRepositoryTest {
 
     @Autowired

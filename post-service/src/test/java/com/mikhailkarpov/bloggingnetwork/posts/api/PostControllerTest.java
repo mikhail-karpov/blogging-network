@@ -100,7 +100,6 @@ class PostControllerTest extends AbstractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(post.getId().toString()))
                 .andExpect(jsonPath("$.content").value("post content"))
-                .andExpect(jsonPath("$.createdDate").isNotEmpty())
                 .andExpect(jsonPath("$.user.userId").value("user-id"))
                 .andExpect(jsonPath("$.user.username").value("username"));
 
@@ -146,7 +145,6 @@ class PostControllerTest extends AbstractControllerTest {
                 .andExpect(jsonPath("$.result.size()").value(1))
                 .andExpect(jsonPath("$.result[0].id").value(post.getId().toString()))
                 .andExpect(jsonPath("$.result[0].content").value("post content"))
-                .andExpect(jsonPath("$.result[0].createdDate").isNotEmpty())
                 .andExpect(jsonPath("$.result[0].user.userId").value("user-id"))
                 .andExpect(jsonPath("$.result[0].user.username").value("username"));
 
