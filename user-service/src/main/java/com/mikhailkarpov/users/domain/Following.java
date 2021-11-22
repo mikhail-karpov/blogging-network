@@ -4,14 +4,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
@@ -19,14 +14,10 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Setter
-public class Following {
+public class Following extends BaseEntity {
 
     @EmbeddedId
     private FollowingId followingId;
-
-    @CreatedDate
-    @Column(name = "created_date", nullable = false, updatable = false)
-    private Instant createdDate;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "follower_user_id", referencedColumnName = "id", insertable = false, updatable = false)
@@ -44,8 +35,10 @@ public class Following {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         Following following = (Following) o;
 
@@ -61,7 +54,7 @@ public class Following {
     public String toString() {
         return "Following{" +
                 "followingId=" + followingId +
-                ", createdDate=" + createdDate +
+                ", createdDate=" + getCreatedDate() +
                 '}';
     }
 }
