@@ -1,7 +1,7 @@
 package com.mikhailkarpov.bloggingnetwork.feed.services;
 
 import com.mikhailkarpov.bloggingnetwork.feed.config.PersistenceTestConfig;
-import com.mikhailkarpov.bloggingnetwork.feed.domain.ActivityEntity;
+import com.mikhailkarpov.bloggingnetwork.feed.domain.FollowingActivity;
 import com.mikhailkarpov.bloggingnetwork.feed.domain.PostActivity;
 import com.mikhailkarpov.bloggingnetwork.feed.repository.ActivityRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,19 +9,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ContextConfiguration;
 
 import javax.persistence.EntityManager;
 import java.util.List;
 
-import static com.mikhailkarpov.bloggingnetwork.feed.domain.ActivityType.FOLLOWING_ACTIVITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = PersistenceTestConfig.class)
-class PostActivityServiceImplTest {
+class ActivityServiceImpTest {
 
     @Autowired
     private ActivityRepository activityRepository;
@@ -29,27 +27,32 @@ class PostActivityServiceImplTest {
     @Autowired
     private EntityManager entityManager;
 
-    private PostActivityServiceImpl postActivityService;
+    private ActivityServiceImpl activityService;
 
     @BeforeEach
     void setUp() {
-        this.postActivityService = new PostActivityServiceImpl(this.activityRepository, this.entityManager);
+        this.activityService = new ActivityServiceImpl(this.activityRepository, this.entityManager);
     }
 
     @Test
-    void givenActivities_whenGetFollowersPosts_thenFound() {
+    void givenActivities_whenGetUserFeed_thenPresent() {
         //given
-        this.activityRepository.save(new ActivityEntity("follower-id", "user-id", FOLLOWING_ACTIVITY));
-
-        for (int i = 1; i <= 10; i++) {
-            PostActivity postActivity = new PostActivity("post " + i, "user-id");
-            postActivityService.save(postActivity);
-        }
+        FollowingActivity followingActivity = new FollowingActivity("follower", "user");
+        PostActivity postActivity1 = new PostActivity("post1", "user");
+        PostActivity postActivity2 = new PostActivity("post2", "user");
 
         //when
-        List<PostActivity> postActivities = postActivityService.getFeed("follower-id", PageRequest.of(0, 10));
+        this.activityService.save(followingActivity);
+        this.activityService.save(postActivity1);
+        this.activityService.save(postActivity2);
+        List<PostActivity> feed = this.activityService.getFeed("follower", 0);
 
         //then
-        assertThat(postActivities.size()).isEqualTo(10);
+        assertThat(feed.size()).isEqualTo(2);
+
+        for (PostActivity activity : feed) {
+            assertThat(activity.getAuthorId()).isEqualTo("user");
+            assertThat(activity.getPostId()).contains("post");
+        }
     }
 }

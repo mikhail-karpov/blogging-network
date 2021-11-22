@@ -1,7 +1,7 @@
 package com.mikhailkarpov.bloggingnetwork.feed.config.messaging;
 
 import com.mikhailkarpov.bloggingnetwork.feed.messaging.PostEventListener;
-import com.mikhailkarpov.bloggingnetwork.feed.services.PostActivityService;
+import com.mikhailkarpov.bloggingnetwork.feed.services.ActivityService;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -44,7 +44,7 @@ public class PostEventListenerConfig {
     }
 
     @Bean
-    public PostEventListener postEventListener(PostActivityService activityService) {
+    public PostEventListener postEventListener(ActivityService activityService) {
         return new PostEventListener(activityService);
     }
 }

@@ -2,6 +2,7 @@ package com.mikhailkarpov.bloggingnetwork.feed.api;
 
 import com.mikhailkarpov.bloggingnetwork.feed.config.JwtDecoderTestConfig;
 import com.mikhailkarpov.bloggingnetwork.feed.dto.Post;
+import com.mikhailkarpov.bloggingnetwork.feed.dto.UserFeed;
 import com.mikhailkarpov.bloggingnetwork.feed.dto.UserProfile;
 import com.mikhailkarpov.bloggingnetwork.feed.services.UserFeedService;
 import org.junit.jupiter.api.Test;
@@ -10,7 +11,6 @@ import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -39,13 +39,13 @@ class UserFeedControllerTest {
     private UserFeedService userFeedService;
 
     @Autowired
-    private JacksonTester<List<Post>> postsTester;
+    private JacksonTester<UserFeed> feedTester;
 
     @Test
     void givenJwt_whenGetUserFeed_thenOk() throws Exception {
         //given
         String userId = "user-id";
-        List<Post> posts = Arrays.asList(
+        UserFeed userFeed = new UserFeed(Arrays.asList(
                 Post.builder()
                         .id("post1")
                         .content("Post 1 content")
@@ -58,23 +58,23 @@ class UserFeedControllerTest {
                         .user(new UserProfile("user2", "username2"))
                         .createdDate(LocalDateTime.now().minus(2L, ChronoUnit.DAYS))
                         .build()
-        );
-        when(this.userFeedService.getUserFeed(userId, PageRequest.of(1, 2))).thenReturn(posts);
+        ));
+        when(this.userFeedService.getUserFeed(userId, 1)).thenReturn(userFeed);
 
         //when
-        MockHttpServletResponse response = this.mockMvc.perform(get("/feed?page=1&size=2")
-                        .with(jwt().jwt(jwt -> jwt.subject(userId))))
+        MockHttpServletResponse response = this.mockMvc.perform(get("/feed?page=1")
+                .with(jwt().jwt(jwt -> jwt.subject(userId))))
                 .andReturn().getResponse();
 
         //then
         assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(response.getContentAsString()).isEqualTo(postsTester.write(posts).getJson());
+        assertThat(response.getContentAsString()).isEqualTo(feedTester.write(userFeed).getJson());
     }
 
     @Test
     void givenNoJwt_whenGetFeed_thenUnauthorized() throws Exception {
         //when
-        this.mockMvc.perform(get("/feed?page=1&size=2"))
+        this.mockMvc.perform(get("/feed?page=1"))
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized());
 
         //then

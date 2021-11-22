@@ -2,8 +2,10 @@ package com.mikhailkarpov.bloggingnetwork.feed.messaging;
 
 import com.mikhailkarpov.bloggingnetwork.feed.config.messaging.AmqpConfig;
 import com.mikhailkarpov.bloggingnetwork.feed.config.messaging.PostEventListenerConfig;
+import com.mikhailkarpov.bloggingnetwork.feed.domain.ActivityId;
+import com.mikhailkarpov.bloggingnetwork.feed.domain.ActivityType;
 import com.mikhailkarpov.bloggingnetwork.feed.domain.PostActivity;
-import com.mikhailkarpov.bloggingnetwork.feed.services.PostActivityService;
+import com.mikhailkarpov.bloggingnetwork.feed.services.ActivityService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,7 +35,7 @@ import static org.mockito.Mockito.verify;
 @ContextConfiguration(classes = {
         RabbitAutoConfiguration.class,
         AmqpConfig.class,
-        PostEventListenerContractTest.RabbitListenerConfig.class,
+        PostEventListenerTest.RabbitListenerConfig.class,
         PostEventListenerConfig.class})
 @AutoConfigureStubRunner(
         ids = "com.mikhailkarpov.blogging-network:post-service",
@@ -42,14 +44,14 @@ import static org.mockito.Mockito.verify;
         "stubrunner.amqp.enabled=true",
         "stubrunner.amqp.mockConnection=true",
         "spring.main.allow-bean-definition-overriding=true"})
-public class PostEventListenerContractTest {
+public class PostEventListenerTest {
 
     @TestConfiguration
     @RabbitListenerTest
     public static class RabbitListenerConfig {
 
         @Bean
-        public PostEventListener postEventListener(PostActivityService activityService) {
+        public PostEventListener postEventListener(ActivityService activityService) {
             return new PostEventListener(activityService);
         }
     }
@@ -61,10 +63,13 @@ public class PostEventListenerContractTest {
     private RabbitListenerTestHarness harness;
 
     @MockBean
-    private PostActivityService postActivityService;
+    private ActivityService activityService;
 
     @Captor
     private ArgumentCaptor<PostActivity> activityArgumentCaptor;
+
+    @Captor
+    private ArgumentCaptor<ActivityId> idArgumentCaptor;
 
     @Test
     void givenPostCreated_thenPostActivityIsSaved() throws InterruptedException {
@@ -72,21 +77,36 @@ public class PostEventListenerContractTest {
         PostEventListener eventListener = this.harness.getSpy(LISTENER_ID);
         assertThat(eventListener).isNotNull();
 
-        LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor(LISTENER_ID, 2);
+        LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor(LISTENER_ID, 1);
         doAnswer(answer).when(eventListener).handle(any());
 
         //when
         this.stubTrigger.trigger("post.created");
+
+        //then
+        assertThat(answer.await(30)).isTrue();
+        verify(this.activityService).save(this.activityArgumentCaptor.capture());
+        assertThat(this.activityArgumentCaptor.getValue().getAuthorId()).isEqualTo("author-id");
+        assertThat(this.activityArgumentCaptor.getValue().getPostId()).isEqualTo("post-id");
+    }
+
+    @Test
+    void givenPostDeleted_thenPostActivityIsDeleted() throws InterruptedException {
+        //given
+        PostEventListener eventListener = this.harness.getSpy(LISTENER_ID);
+        assertThat(eventListener).isNotNull();
+
+        LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor(LISTENER_ID, 1);
+        doAnswer(answer).when(eventListener).handle(any());
+
+        //when
         this.stubTrigger.trigger("post.deleted");
 
         //then
         assertThat(answer.await(30)).isTrue();
-        verify(this.postActivityService).save(this.activityArgumentCaptor.capture());
-        verify(this.postActivityService).delete(this.activityArgumentCaptor.capture());
-
-        for (PostActivity activity : this.activityArgumentCaptor.getAllValues()) {
-            assertThat(activity.getPostId()).isNotNull();
-            assertThat(activity.getAuthorId()).isNotNull();
-        }
+        verify(this.activityService).deleteById(this.idArgumentCaptor.capture());
+        assertThat(this.idArgumentCaptor.getValue().getUserId()).isEqualTo("author-id");
+        assertThat(this.idArgumentCaptor.getValue().getSourceId()).isEqualTo("post-id");
+        assertThat(this.idArgumentCaptor.getValue().getActivityType()).isEqualTo(ActivityType.POST_ACTIVITY);
     }
 }
