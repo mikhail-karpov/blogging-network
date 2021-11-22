@@ -12,6 +12,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Service;
 
 import javax.ws.rs.core.Response;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +32,12 @@ public class KeycloakAdminClientImpl implements KeycloakAdminClient {
     public UserRepresentation findUserById(String userId) {
 
         return usersResource.get(userId).toRepresentation();
+    }
+
+    @Override
+    public List<UserRepresentation> findByUsernameLike(String username, int firstResult, int maxResults) {
+
+        return usersResource.search(username, firstResult, maxResults, true);
     }
 
     @Override

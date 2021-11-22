@@ -10,4 +10,6 @@ import org.springframework.data.repository.query.Param;
 public interface UserProfileRepository extends PagingAndSortingRepository<UserProfile, String> {
 
     boolean existsByUsernameOrEmail(String username, String email);
+
+    Page<UserProfile> findAllByUsernameContainingIgnoreCase(String username, Pageable pageable);
 }

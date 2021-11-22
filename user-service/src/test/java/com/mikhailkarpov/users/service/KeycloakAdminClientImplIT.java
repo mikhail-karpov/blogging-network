@@ -15,10 +15,10 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.ws.rs.WebApplicationException;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,7 +49,7 @@ class KeycloakAdminClientImplIT {
 
     @Test
     void contextLoads() {
-        Assertions.assertThat(this.keycloakAdminClient).isNotNull();
+        assertThat(this.keycloakAdminClient).isNotNull();
     }
 
     @Test
@@ -58,7 +58,7 @@ class KeycloakAdminClientImplIT {
         String username = UUID.randomUUID().toString();
         String email = username + "@example.com";
         String password = UUID.randomUUID().toString();
-        UserRepresentation user = createUser(username, email, password);
+        UserRepresentation user = buildUserRepresentation(username, email, password);
 
         //when
         String userId = keycloakAdminClient.createUser(user);
@@ -76,6 +76,22 @@ class KeycloakAdminClientImplIT {
     }
 
     @Test
+    void givenUserRepresentation_whenFindByUsernameLike_thenFound() {
+        //given
+        UserRepresentation user1 = buildUserRepresentation("hugoboss", "hugoboss@example.com", "password");
+        UserRepresentation user2 = buildUserRepresentation("boss", "boss@example.com", "password");
+
+        //when
+        this.keycloakAdminClient.createUser(user1);
+        this.keycloakAdminClient.createUser(user2);
+        List<UserRepresentation> users =
+                this.keycloakAdminClient.findByUsernameLike("Boss", 0, 10);
+
+        //then
+        assertThat(users.size()).isEqualTo(2);
+    }
+
+    @Test
     void givenNoUser_whenFindById_thenThrows() {
         //given
         String userId = UUID.randomUUID().toString();
@@ -90,7 +106,7 @@ class KeycloakAdminClientImplIT {
         String username = UUID.randomUUID().toString();
         String email = username + "@example.com";
         String password = UUID.randomUUID().toString();
-        UserRepresentation user = createUser(username, email, password);
+        UserRepresentation user = buildUserRepresentation(username, email, password);
 
         //when
         keycloakAdminClient.createUser(user);
@@ -110,7 +126,7 @@ class KeycloakAdminClientImplIT {
         assertThrows(WebApplicationException.class, () -> keycloakAdminClient.obtainAccessToken(username, password));
     }
 
-    private UserRepresentation createUser(String username, String email, String password) {
+    private UserRepresentation buildUserRepresentation(String username, String email, String password) {
 
         CredentialRepresentation credentials = new CredentialRepresentation();
         credentials.setTemporary(false);

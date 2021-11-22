@@ -5,17 +5,21 @@ import com.mikhailkarpov.users.domain.UserProfile;
 import com.mikhailkarpov.users.dto.UserRegistrationRequest;
 import com.mikhailkarpov.users.exception.ResourceAlreadyExistsException;
 import com.mikhailkarpov.users.util.DtoUtils;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -83,22 +87,17 @@ class UserServiceImplIT extends AbstractIT {
     }
 
     @Test
-    void givenCreatedUsers_whenFindById_thenFound() {
+    void givenCreatedUsers_whenFindByUsernameLike_thenFound() {
         //given
-        List<String> idList = new ArrayList<>();
-        for (int i = 0; i < 5; i++) {
-            UserProfile userProfile = userService.create(DtoUtils.createRandomRequest());
-            idList.add(userProfile.getId());
-        }
+        userService.create(new UserRegistrationRequest("john_doe", "doe@example.com", "pa55word"));
+        userService.create(new UserRegistrationRequest("john_adam", "adam@example.com", "pa55word"));
 
         //when
-        List<String> foundIdList = new ArrayList<>(5);
-        for (UserProfile userProfile : userService.findByIdIn(idList)) {
-            foundIdList.add(userProfile.getId());
-        }
+        Page<UserProfile> profilePage = userService.findByUsernameLike("John", PageRequest.of(0, 3));
 
         //then
-        assertThat(foundIdList.size()).isEqualTo(5);
+        assertThat(profilePage.getTotalElements()).isEqualTo(2L);
+        assertThat(profilePage.getContent().size()).isEqualTo(2);
     }
 
     private Optional<UserProfile> fromCache(String userId) {

@@ -11,18 +11,23 @@ import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = UserController.class)
@@ -52,7 +57,7 @@ class UserControllerTest {
 
         //when
         MockHttpServletResponse response = this.mockMvc.perform(get("/users/{id}/profile", id)
-                        .with(jwt()))
+                .with(jwt()))
                 .andReturn()
                 .getResponse();
 
@@ -69,20 +74,50 @@ class UserControllerTest {
 
         //when
         this.mockMvc.perform(get("/users/{id}/profile", id)
-                        .with(jwt()))
+                .with(jwt()))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void givenNoAuth_whenGetById_thenUnauthorized() throws Exception {
-        //given
-        String id = UUID.randomUUID().toString();
-        Mockito.when(this.userService.findById(id)).thenReturn(Optional.empty());
-
         //when
-        this.mockMvc.perform(get("/users/{id}/profile", id))
+        this.mockMvc.perform(get("/users/{id}/profile", UUID.randomUUID().toString()))
                 .andExpect(status().isUnauthorized());
 
-        Mockito.verifyNoInteractions(this.userService);
+        //then
+        verifyNoInteractions(this.userService);
+    }
+
+    @Test
+    void givenProfiles_whenSearchByUsername_thenOk() throws Exception {
+        //given
+        UserProfile user1 = new UserProfile("user1", "username1", "username1@example.com");
+        UserProfile user2 = new UserProfile("user2", "username2", "username2@example.com");
+
+        when(this.userService.findByUsernameLike("username", PageRequest.of(1, 2)))
+                .thenReturn(new PageImpl<>(Arrays.asList(user1, user2), PageRequest.of(1, 2), 4L));
+
+        //when
+        this.mockMvc.perform(get("/users/search?username={username}&page=1&size=2", "username")
+                .with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.totalResults").value(4))
+                .andExpect(jsonPath("$.result").isArray())
+                .andExpect(jsonPath("$.result.size()").value(2))
+                .andExpect(jsonPath("$.result[0].userId").value("user1"))
+                .andExpect(jsonPath("$.result[0].username").value("username1"))
+                .andExpect(jsonPath("$.result[1].userId").value("user2"))
+                .andExpect(jsonPath("$.result[1].username").value("username2"));
+    }
+
+    @Test
+    void givenNoAuth_whenSearchByUsername_thenUnauthorized() throws Exception {
+        //when
+        this.mockMvc.perform(get("/users/search?username={username}", "username"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(this.userService);
     }
 }

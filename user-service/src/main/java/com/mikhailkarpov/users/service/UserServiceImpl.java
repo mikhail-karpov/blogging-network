@@ -6,17 +6,22 @@ import com.mikhailkarpov.users.dto.UserRegistrationRequest;
 import com.mikhailkarpov.users.exception.ResourceAlreadyExistsException;
 import com.mikhailkarpov.users.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -32,6 +37,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @CachePut(value = USER_PROFILE_CACHE, key = "#result.id")
+    @Transactional
     public UserProfile create(UserRegistrationRequest request) {
 
         String username = request.getUsername();
@@ -69,5 +75,12 @@ public class UserServiceImpl implements UserService {
     public Optional<UserProfile> findById(String userId) {
 
         return userProfileRepository.findById(userId);
+    }
+
+    @Override
+    public Page<UserProfile> findByUsernameLike(String username, Pageable pageable) {
+        final Page<UserProfile> profiles = this.userProfileRepository.findAllByUsernameContainingIgnoreCase(username, pageable);
+        log.info("Found profiles: {}", profiles.getSize());
+        return profiles;
     }
 }
