@@ -2,34 +2,33 @@ package com.mikhailkarpov.bloggingnetwork.feed.services;
 
 import com.mikhailkarpov.bloggingnetwork.feed.client.PostServiceClient;
 import com.mikhailkarpov.bloggingnetwork.feed.dto.Post;
+import com.mikhailkarpov.bloggingnetwork.feed.dto.UserFeed;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class UserFeedServiceImpl implements UserFeedService {
 
-    private final PostActivityService postActivityService;
+    private final ActivityService activityService;
 
     private final PostServiceClient postServiceClient;
 
     @Override
-    public List<Post> getUserFeed(String userId, Pageable pageable) {
+    public UserFeed getUserFeed(String userId, int page) {
 
-        List<Post> entries = new ArrayList<>(pageable.getPageSize());
+        List<Post> posts = this.activityService.getFeed(userId, page)
+                .stream()
+                .map(postActivity -> this.postServiceClient.getPostById(postActivity.getPostId()))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
 
-        this.postActivityService.getFeed(userId, pageable).forEach(postActivity -> {
-            Optional<Post> post = this.postServiceClient.getPostById(postActivity.getPostId());
-            if (post.isPresent()) {
-                entries.add(post.get());
-            }
-        });
-
-        return entries;
+        return new UserFeed(posts);
     }
 }

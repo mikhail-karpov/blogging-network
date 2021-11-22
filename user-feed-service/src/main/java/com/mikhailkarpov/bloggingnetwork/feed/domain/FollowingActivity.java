@@ -1,10 +1,25 @@
 package com.mikhailkarpov.bloggingnetwork.feed.domain;
 
-import lombok.Data;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
-@Data
-public class FollowingActivity {
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
 
-    private final String followerUserId;
-    private final String followingUserId;
+@Entity
+@DiscriminatorValue("FOLLOWING_ACTIVITY")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class FollowingActivity extends Activity {
+
+    public FollowingActivity(String followerUserId, String followingUserId) {
+        super(followerUserId, followingUserId, ActivityType.FOLLOWING_ACTIVITY);
+    }
+
+    public String getFollowerUserId() {
+        return getUserId();
+    }
+
+    public String getFollowingUserId() {
+        return getSourceId();
+    }
 }

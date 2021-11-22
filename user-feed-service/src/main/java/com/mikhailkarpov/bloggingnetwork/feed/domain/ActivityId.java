@@ -1,5 +1,6 @@
 package com.mikhailkarpov.bloggingnetwork.feed.domain;
 
+import com.google.common.base.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,27 +11,22 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import java.io.Serializable;
 
-@Embeddable
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @Getter
 public class ActivityId implements Serializable {
 
     private static final long serialVersionUID = 5923132376167657703L;
 
-    @Column(name = "user_id", nullable = false, updatable = false)
     private String userId;
 
-    @Column(name = "source_id", nullable = false, updatable = false)
     private String sourceId;
 
-    @Column(name = "activity_type", nullable = false, updatable = false)
-    @Enumerated(EnumType.STRING)
-    private ActivityType type;
+    private ActivityType activityType;
 
     public ActivityId(String userId, String sourceId, ActivityType type) {
         this.userId = userId;
         this.sourceId = sourceId;
-        this.type = type;
+        this.activityType = type;
     }
 
     @Override
@@ -42,15 +38,12 @@ public class ActivityId implements Serializable {
 
         if (!userId.equals(that.userId)) return false;
         if (!sourceId.equals(that.sourceId)) return false;
-        return type == that.type;
+        return activityType == that.activityType;
     }
 
     @Override
     public int hashCode() {
-        int result = userId.hashCode();
-        result = 31 * result + sourceId.hashCode();
-        result = 31 * result + type.hashCode();
-        return result;
+        return Objects.hashCode(userId, sourceId, activityType);
     }
 
     @Override
@@ -58,7 +51,7 @@ public class ActivityId implements Serializable {
         return "ActivityId{" +
                 "userId='" + userId + '\'' +
                 ", sourceId='" + sourceId + '\'' +
-                ", type=" + type +
+                ", type=" + activityType +
                 '}';
     }
 }

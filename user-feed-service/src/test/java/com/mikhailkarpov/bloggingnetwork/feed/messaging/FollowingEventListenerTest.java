@@ -2,8 +2,10 @@ package com.mikhailkarpov.bloggingnetwork.feed.messaging;
 
 import com.mikhailkarpov.bloggingnetwork.feed.config.messaging.AmqpConfig;
 import com.mikhailkarpov.bloggingnetwork.feed.config.messaging.FollowingEventListenerConfig;
+import com.mikhailkarpov.bloggingnetwork.feed.domain.ActivityId;
+import com.mikhailkarpov.bloggingnetwork.feed.domain.ActivityType;
 import com.mikhailkarpov.bloggingnetwork.feed.domain.FollowingActivity;
-import com.mikhailkarpov.bloggingnetwork.feed.services.FollowingActivityService;
+import com.mikhailkarpov.bloggingnetwork.feed.services.ActivityService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,7 +35,7 @@ import static org.mockito.Mockito.verify;
 @ContextConfiguration(classes = {
         RabbitAutoConfiguration.class,
         AmqpConfig.class,
-        FollowingEventListenerContractTest.RabbitListenerConfig.class,
+        FollowingEventListenerTest.RabbitListenerConfig.class,
         FollowingEventListenerConfig.class})
 @AutoConfigureStubRunner(
         ids = "com.mikhailkarpov:user-service",
@@ -42,14 +44,14 @@ import static org.mockito.Mockito.verify;
         "stubrunner.amqp.enabled=true",
         "stubrunner.amqp.mockConnection=true",
         "spring.main.allow-bean-definition-overriding=true"})
-class FollowingEventListenerContractTest {
+class FollowingEventListenerTest {
 
     @TestConfiguration
     @RabbitListenerTest
     public static class RabbitListenerConfig {
 
         @Bean
-        public FollowingEventListener followingEventListener(FollowingActivityService activityService) {
+        public FollowingEventListener followingEventListener(ActivityService activityService) {
             return new FollowingEventListener(activityService);
         }
     }
@@ -61,10 +63,32 @@ class FollowingEventListenerContractTest {
     private RabbitListenerTestHarness harness;
 
     @MockBean
-    private FollowingActivityService activityService;
+    private ActivityService activityService;
 
     @Captor
-    private ArgumentCaptor<FollowingActivity> followingActivityArgumentCaptor;
+    private ArgumentCaptor<FollowingActivity> activityArgumentCaptor;
+
+    @Captor
+    private ArgumentCaptor<ActivityId> idArgumentCaptor;
+
+    @Test
+    void givenUserFollows_thenFollowingActivityIsSaved() throws InterruptedException {
+        //given
+        FollowingEventListener eventListener = this.harness.getSpy(LISTENER_ID);
+        assertThat(eventListener).isNotNull();
+
+        LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor(LISTENER_ID, 1);
+        doAnswer(answer).when(eventListener).handle(any());
+
+        //when
+        this.stubTrigger.trigger("user.follows.event");
+
+        //then
+        assertThat(answer.await(30)).isTrue();
+        verify(this.activityService).save(this.activityArgumentCaptor.capture());
+        assertThat(this.activityArgumentCaptor.getValue().getFollowerUserId()).isEqualTo("followerId");
+        assertThat(this.activityArgumentCaptor.getValue().getFollowingUserId()).isEqualTo("followingId");
+    }
 
     @Test
     void givenFollowingEvent_thenFollowingActivityIsSaved() throws InterruptedException {
@@ -72,21 +96,17 @@ class FollowingEventListenerContractTest {
         FollowingEventListener eventListener = this.harness.getSpy(LISTENER_ID);
         assertThat(eventListener).isNotNull();
 
-        LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor(LISTENER_ID, 2);
+        LatchCountDownAndCallRealMethodAnswer answer = this.harness.getLatchAnswerFor(LISTENER_ID, 1);
         doAnswer(answer).when(eventListener).handle(any());
 
         //when
-        this.stubTrigger.trigger("user.follows.event");
         this.stubTrigger.trigger("user.unfollows.event");
 
         //then
         assertThat(answer.await(30)).isTrue();
-        verify(this.activityService).save(this.followingActivityArgumentCaptor.capture());
-        verify(this.activityService).delete(this.followingActivityArgumentCaptor.capture());
-
-        for (FollowingActivity activity : this.followingActivityArgumentCaptor.getAllValues()) {
-            assertThat(activity.getFollowerUserId()).isNotNull();
-            assertThat(activity.getFollowingUserId()).isNotNull();
-        }
+        verify(this.activityService).deleteById(this.idArgumentCaptor.capture());
+        assertThat(this.idArgumentCaptor.getValue().getUserId()).isEqualTo("followerId");
+        assertThat(this.idArgumentCaptor.getValue().getSourceId()).isEqualTo("followingId");
+        assertThat(this.idArgumentCaptor.getValue().getActivityType()).isEqualTo(ActivityType.FOLLOWING_ACTIVITY);
     }
 }
