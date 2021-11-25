@@ -1,15 +1,17 @@
 package com.mikhailkarpov.users.repository;
 
 import com.mikhailkarpov.users.domain.UserProfile;
+import com.mikhailkarpov.users.domain.UserProfileIntf;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.repository.query.Param;
+
+import java.util.Optional;
 
 public interface UserProfileRepository extends PagingAndSortingRepository<UserProfile, String> {
 
-    boolean existsByUsernameOrEmail(String username, String email);
+    Optional<UserProfileIntf> findUserProfileById(String userId);
 
-    Page<UserProfile> findAllByUsernameContainingIgnoreCase(String username, Pageable pageable);
+    Page<UserProfileIntf> findAllByUsernameContainingIgnoreCase(String username, Pageable pageable);
+
 }

@@ -4,12 +4,10 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 
 @Entity
-@EntityListeners(AuditingEntityListener.class)
 @Table(name = "following")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
@@ -21,16 +19,16 @@ public class Following extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "follower_user_id", referencedColumnName = "id", insertable = false, updatable = false)
-    private UserProfile follower;
+    private UserProfile followerUser;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "following_user_id", referencedColumnName = "id", insertable = false, updatable = false)
-    private UserProfile user;
+    private UserProfile followingUser;
 
-    public Following(UserProfile follower, UserProfile user) {
-        this.follower = follower;
-        this.user = user;
-        this.followingId = new FollowingId(follower.getId(), user.getId());
+    public Following(UserProfile followerUser, UserProfile followingUser) {
+        this.followerUser = followerUser;
+        this.followingUser = followingUser;
+        this.followingId = new FollowingId(followerUser.getId(), followingUser.getId());
     }
 
     @Override

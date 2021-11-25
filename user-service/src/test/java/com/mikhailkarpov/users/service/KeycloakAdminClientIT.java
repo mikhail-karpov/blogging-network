@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @EnableConfigurationProperties
 @ContextConfiguration(classes = {KeycloakAdminConfig.class, KeycloakAdminClientImpl.class})
 @TestPropertySource(locations = "classpath:keycloak-admin-client-test.properties")
-class KeycloakAdminClientImplIT {
+class KeycloakAdminClientIT {
 
     static final KeycloakContainer KEYCLOAK;
 
@@ -46,11 +46,6 @@ class KeycloakAdminClientImplIT {
 
     @Autowired
     private KeycloakAdminClientImpl keycloakAdminClient;
-
-    @Test
-    void contextLoads() {
-        assertThat(this.keycloakAdminClient).isNotNull();
-    }
 
     @Test
     void givenUserRepresentation_whenCreateUserAndFindById_thenCreatedAndFound() {

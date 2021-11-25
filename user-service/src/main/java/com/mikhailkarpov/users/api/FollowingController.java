@@ -20,21 +20,21 @@ public class FollowingController {
     public void follow(@PathVariable("id") String userId, @AuthenticationPrincipal Jwt jwt) {
 
         String followerId = jwt.getSubject();
-        followingService.addToFollowers(userId, followerId);
+        this.followingService.addToFollowers(userId, followerId);
     }
 
     @DeleteMapping("/users/{id}/followers")
     public void unfollow(@PathVariable("id") String userId, @AuthenticationPrincipal Jwt jwt) {
 
         String followerId = jwt.getSubject();
-        followingService.removeFromFollowers(userId, followerId);
+        this.followingService.removeFromFollowers(userId, followerId);
     }
 
     @GetMapping("/users/{id}/followers")
     public PagedResult<UserProfileDto> getFollowers(@PathVariable("id") String userId, Pageable pageable) {
 
-        Page<UserProfileDto> followersPage = followingService.findFollowers(userId, pageable)
-                .map(UserProfileDto::from);
+        Page<UserProfileDto> followersPage = this.followingService.findFollowers(userId, pageable)
+                .map(profile -> new UserProfileDto(profile.getId(), profile.getUsername()));
 
         return new PagedResult<>(followersPage);
     }
@@ -42,9 +42,9 @@ public class FollowingController {
     @GetMapping("/users/{id}/followings")
     public PagedResult<UserProfileDto> getFollowings(@PathVariable("id") String userId, Pageable pageable) {
 
-        Page<UserProfileDto> followingsPage = followingService.findFollowings(userId, pageable)
-                .map(UserProfileDto::from);
+        Page<UserProfileDto> followingPage = followingService.findFollowing(userId, pageable)
+                .map(profile -> new UserProfileDto(profile.getId(), profile.getUsername()));
 
-        return new PagedResult<>(followingsPage);
+        return new PagedResult<>(followingPage);
     }
 }
