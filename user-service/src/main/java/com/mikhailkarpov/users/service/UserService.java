@@ -1,7 +1,7 @@
 package com.mikhailkarpov.users.service;
 
-import com.mikhailkarpov.users.domain.UserProfileIntf;
 import com.mikhailkarpov.users.dto.UserAuthenticationRequest;
+import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.dto.UserRegistrationRequest;
 import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.data.domain.Page;
@@ -13,9 +13,9 @@ public interface UserService {
 
     AccessTokenResponse authenticate(UserAuthenticationRequest request);
 
-    UserProfileIntf create(UserRegistrationRequest request);
+    UserProfileDto create(UserRegistrationRequest request);
 
-    Optional<UserProfileIntf> findById(String id);
+    Optional<UserProfileDto> findById(String id);
 
-    Page<UserProfileIntf> findByUsernameLike(String username, Pageable pageable);
+    Page<UserProfileDto> findByUsernameLike(String username, Pageable pageable);
 }

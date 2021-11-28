@@ -1,5 +1,7 @@
 package com.mikhailkarpov.users.config;
 
+import com.mikhailkarpov.users.messaging.FollowingEventPublisher;
+import org.mockito.Mockito;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +16,7 @@ public class PersistenceTestConfig {
 
     @Bean(initMethod = "start", destroyMethod = "stop")
     public PostgreSQLContainer postgreSQLContainer() {
+
         return new PostgreSQLContainer<>("postgres")
                 .withDatabaseName("user_service")
                 .withUsername("user_service")
@@ -23,6 +26,7 @@ public class PersistenceTestConfig {
 
     @Bean
     public DataSource datasource(PostgreSQLContainer postgreSQLContainer) {
+
         DataSourceBuilder dataSourceBuilder = DataSourceBuilder.create();
 
         dataSourceBuilder.url(postgreSQLContainer.getJdbcUrl());
@@ -31,5 +35,10 @@ public class PersistenceTestConfig {
         dataSourceBuilder.password(postgreSQLContainer.getPassword());
 
         return dataSourceBuilder.build();
+    }
+
+    @Bean
+    public FollowingEventPublisher followingEventPublisher() {
+        return Mockito.mock(FollowingEventPublisher.class);
     }
 }

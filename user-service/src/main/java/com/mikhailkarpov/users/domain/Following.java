@@ -1,58 +1,53 @@
 package com.mikhailkarpov.users.domain;
 
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import javax.persistence.*;
 
 @Entity
 @Table(name = "following")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Getter
-@Setter
+@EntityListeners(FollowingEntityListener.class)
 public class Following extends BaseEntity {
 
     @EmbeddedId
-    private FollowingId followingId;
+    private FollowingId id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "follower_user_id", referencedColumnName = "id", insertable = false, updatable = false)
-    private UserProfile followerUser;
+    private UserProfile follower;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "following_user_id", referencedColumnName = "id", insertable = false, updatable = false)
-    private UserProfile followingUser;
+    private UserProfile following;
 
-    public Following(UserProfile followerUser, UserProfile followingUser) {
-        this.followerUser = followerUser;
-        this.followingUser = followingUser;
-        this.followingId = new FollowingId(followerUser.getId(), followingUser.getId());
+    public Following(UserProfile follower, UserProfile following) {
+        this.follower = follower;
+        this.following = following;
+        this.id = new FollowingId(follower.getId(), following.getId());
+    }
+
+    public String getFollowerUserId() {
+        return this.id.getFollowerUserId();
+    }
+
+    public String getFollowingUserId() {
+        return this.id.getFollowingUserId();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
         Following following = (Following) o;
 
-        return followingId.equals(following.followingId);
+        return id.equals(following.id);
     }
 
     @Override
     public int hashCode() {
-        return followingId.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return "Following{" +
-                "followingId=" + followingId +
-                ", createdDate=" + getCreatedDate() +
-                '}';
+        return id.hashCode();
     }
 }

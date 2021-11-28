@@ -7,14 +7,11 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.io.Serializable;
 
 @Entity
 @Table(name = "user_profile")
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // for JPA
-public class UserProfile extends BaseEntity implements UserProfileIntf, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class UserProfile extends BaseEntity {
 
     @Id
     private String id;
@@ -31,12 +28,10 @@ public class UserProfile extends BaseEntity implements UserProfileIntf, Serializ
         this.email = email;
     }
 
-    @Override
     public String getId() {
         return id;
     }
 
-    @Override
     public String getUsername() {
         return username;
     }

@@ -18,28 +18,28 @@ class UserProfileDtoTest {
     private JacksonTester<UserProfileDto> profileDtoJson;
 
     private final String id = UUID.randomUUID().toString();
-    private final UserProfileDto profileDto = new UserProfileDto(id, "username");
 
     @Test
     void testSerialize() throws IOException {
         //when
+        UserProfileDto profileDto = new UserProfileDto(id, "user");
         JsonContent<UserProfileDto> json = profileDtoJson.write(profileDto);
 
         //then
         assertThat(json).extractingJsonPathStringValue("$.userId").isEqualTo(id);
-        assertThat(json).extractingJsonPathStringValue("$.username").isEqualTo("username");
+        assertThat(json).extractingJsonPathStringValue("$.username").isEqualTo("user");
     }
 
     @Test
     void testDeserialize() throws IOException {
         //given
-        String json = String.format("{\"id\":\"%s\", \"username\":\"username\"}", id);
+        String json = String.format("{\"userId\":\"%s\", \"username\":\"user\"}", id);
 
         //when
         UserProfileDto profileDto = profileDtoJson.parse(json).getObject();
 
         //then
         assertThat(profileDto.getId()).isEqualTo(id);
-        assertThat(profileDto.getUsername()).isEqualTo("username");
+        assertThat(profileDto.getUsername()).isEqualTo("user");
     }
 }

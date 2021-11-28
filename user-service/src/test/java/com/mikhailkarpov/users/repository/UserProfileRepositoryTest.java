@@ -1,8 +1,7 @@
 package com.mikhailkarpov.users.repository;
 
 import com.mikhailkarpov.users.config.PersistenceTestConfig;
-import com.mikhailkarpov.users.domain.UserProfileIntf;
-import org.assertj.core.api.Assertions;
+import com.mikhailkarpov.users.dto.UserProfileDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -12,7 +11,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.jdbc.Sql;
-import org.springframework.test.context.jdbc.SqlMergeMode;
 
 import java.util.Optional;
 
@@ -20,30 +18,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@ContextConfiguration(classes = PersistenceTestConfig.class)
+@ContextConfiguration(classes = {PersistenceTestConfig.class})
 @Sql(scripts = "/db_scripts/insert_users.sql")
-@SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
 class UserProfileRepositoryTest {
 
     @Autowired
     private UserProfileRepository userProfileRepository;
 
     @Test
-    void givenSqlScript_whenGetById_thenFound() {
+    void givenUsers_whenGetById_thenFound() {
         //when
-        Optional<UserProfileIntf> profile = this.userProfileRepository.findUserProfileById("1");
+        Optional<UserProfileDto> profile = this.userProfileRepository.findUserProfileById("1");
 
         //then
         assertThat(profile).isPresent();
     }
 
     @Test
-    void givenSqlScript_whenFindByUsername_thenFound() {
+    void givenUsers_whenFindByUsername_thenFound() {
         //given
         PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.ASC, "id"));
 
         //when
-        Page<UserProfileIntf> profiles =
+        Page<UserProfileDto> profiles =
                 this.userProfileRepository.findAllByUsernameContainingIgnoreCase("Smith", pageRequest);
 
         //then

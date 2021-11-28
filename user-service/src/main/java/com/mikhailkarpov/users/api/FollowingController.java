@@ -33,18 +33,14 @@ public class FollowingController {
     @GetMapping("/users/{id}/followers")
     public PagedResult<UserProfileDto> getFollowers(@PathVariable("id") String userId, Pageable pageable) {
 
-        Page<UserProfileDto> followersPage = this.followingService.findFollowers(userId, pageable)
-                .map(profile -> new UserProfileDto(profile.getId(), profile.getUsername()));
-
+        Page<UserProfileDto> followersPage = this.followingService.findFollowers(userId, pageable);
         return new PagedResult<>(followersPage);
     }
 
-    @GetMapping("/users/{id}/followings")
+    @GetMapping("/users/{id}/following")
     public PagedResult<UserProfileDto> getFollowings(@PathVariable("id") String userId, Pageable pageable) {
 
-        Page<UserProfileDto> followingPage = followingService.findFollowing(userId, pageable)
-                .map(profile -> new UserProfileDto(profile.getId(), profile.getUsername()));
-
+        Page<UserProfileDto> followingPage = followingService.findFollowing(userId, pageable);
         return new PagedResult<>(followingPage);
     }
 }

@@ -1,6 +1,5 @@
 package com.mikhailkarpov.users.api;
 
-import com.mikhailkarpov.users.domain.UserProfileIntf;
 import com.mikhailkarpov.users.dto.PagedResult;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.service.UserService;
@@ -23,7 +22,6 @@ public class UserController {
     public ResponseEntity<UserProfileDto> findById(@PathVariable String id) {
 
         return this.userService.findById(id)
-                .map(profile -> new UserProfileDto(profile.getId(), profile.getUsername()))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -31,9 +29,7 @@ public class UserController {
     @GetMapping("/users/search")
     public PagedResult<UserProfileDto> findByUsernameLike(@RequestParam String username, Pageable pageable) {
 
-        Page<UserProfileDto> profiles = this.userService.findByUsernameLike(username, pageable)
-                .map(profile -> new UserProfileDto(profile.getId(), profile.getUsername()));
-
+        Page<UserProfileDto> profiles = this.userService.findByUsernameLike(username, pageable);
         return new PagedResult<>(profiles);
     }
 }

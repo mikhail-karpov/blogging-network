@@ -1,7 +1,7 @@
 package com.mikhailkarpov.users.service;
 
 import com.mikhailkarpov.users.config.AbstractIT;
-import com.mikhailkarpov.users.domain.UserProfileIntf;
+import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.dto.UserRegistrationRequest;
 import com.mikhailkarpov.users.util.DtoUtils;
 import org.junit.jupiter.api.Test;
@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -17,7 +16,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@Sql(scripts = "/db_scripts/delete_users.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class UserServiceCacheIT extends AbstractIT {
 
     @Autowired
@@ -32,8 +30,8 @@ class UserServiceCacheIT extends AbstractIT {
         UserRegistrationRequest request = DtoUtils.createRandomRequest();
 
         //when
-        UserProfileIntf createdProfile = this.userService.create(request);
-        Optional<UserProfileIntf> cachedProfile = findFromCacheById(createdProfile.getId());
+        UserProfileDto createdProfile = this.userService.create(request);
+        Optional<UserProfileDto> cachedProfile = findFromCacheById(createdProfile.getId());
 
         //then
         assertThat(cachedProfile).isPresent();
@@ -41,15 +39,14 @@ class UserServiceCacheIT extends AbstractIT {
     }
 
     @Test
-    @Sql(scripts = "/db_scripts/insert_users.sql")
     void givenUser_whenFindById_thenFoundAndCached() {
         //given
         UserRegistrationRequest request = DtoUtils.createRandomRequest();
 
         //when
-        UserProfileIntf created = this.userService.create(request);
-        Optional<UserProfileIntf> found = this.userService.findById(created.getId());
-        Optional<UserProfileIntf> cached = findFromCacheById(created.getId());
+        UserProfileDto created = this.userService.create(request);
+        Optional<UserProfileDto> found = this.userService.findById(created.getId());
+        Optional<UserProfileDto> cached = findFromCacheById(created.getId());
 
         //then
         assertThat(found).isPresent();
@@ -69,9 +66,9 @@ class UserServiceCacheIT extends AbstractIT {
         assertThat(findFromCacheById(userId)).isEmpty();
     }
 
-    private Optional<UserProfileIntf> findFromCacheById(String userId) {
+    private Optional<UserProfileDto> findFromCacheById(String userId) {
 
         Cache cache = this.cacheManager.getCache(UserServiceImpl.USER_PROFILE_CACHE);
-        return Optional.ofNullable(cache).map(c -> c.get(userId, UserProfileIntf.class));
+        return Optional.ofNullable(cache).map(c -> c.get(userId, UserProfileDto.class));
     }
 }

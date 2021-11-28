@@ -1,64 +1,72 @@
 package com.mikhailkarpov.users.api;
 
+import com.mikhailkarpov.users.config.AbstractIT;
+import com.mikhailkarpov.users.config.SecurityTestConfig;
 import com.mikhailkarpov.users.dto.PagedResult;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
-import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
+import org.springframework.boot.test.json.JacksonTester;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class UserControllerIT extends AbstractControllerIT {
+@AutoConfigureMockMvc
+@AutoConfigureJsonTesters
+@ContextConfiguration(classes = SecurityTestConfig.class)
+@Sql(scripts = {"/db_scripts/insert_users.sql", "/db_scripts/insert_followings.sql"})
+@Sql(scripts = {"/db_scripts/delete_followings.sql", "/db_scripts/delete_users.sql"},
+        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+class UserControllerIT extends AbstractIT {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private JacksonTester<UserProfileDto> profileTester;
+
+    @Autowired
+    private JacksonTester<PagedResult<UserProfileDto>> pagedResultTester;
+
+    private final UserProfileDto johnSmith = new UserProfileDto("1", "johnsmith");
+    private final UserProfileDto adamSmith = new UserProfileDto("2", "adamsmith");
 
     @Test
-    void givenUserRegistered_whenGetProfile_thenOk() {
-        //given
-        String username = RandomStringUtils.randomAlphabetic(15);
-        String email = username + "@example.com";
-        String password = "password";
-        UserProfileDto user = registerUser(username, email, password);
-
+    void givenUsers_whenGetProfile_thenOk() throws Exception {
         //when
-        HttpHeaders headers = loginAndBuildAuthorizationHeader(username, password);
-        ResponseEntity<UserProfileDto> response =
-                this.restTemplate.exchange("/users/{id}/profile", GET, new HttpEntity<>(headers), UserProfileDto.class, user.getId());
+        MockHttpServletResponse response = this.mockMvc.perform(get("/users/1profile")
+                        .with(jwt()))
+                .andReturn()
+                .getResponse();
 
         //then
-        assertThat(response.getStatusCodeValue()).isEqualTo(200);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody()).hasNoNullFieldsOrProperties();
-        assertThat(response.getBody().getUsername()).isEqualTo(username);
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getContentAsString()).isEqualTo(this.profileTester.write(this.johnSmith).getJson());
     }
 
     @Test
-    void givenUsersRegistered_whenSearchByUsername_thenOk() {
-        //given
-        for (int i = 0; i < 5; i++) {
-            String username = "jamesbond" + i;
-            registerUser(username, username + "@example.com", "password");
-        }
-
+    void givenUsers_whenSearchByUsername_thenOk() throws Exception {
         //when
-        HttpHeaders headers = loginAndBuildAuthorizationHeader("jamesbond0", "password");
-        ResponseEntity<PagedResult<UserProfileDto>> response =
-                this.restTemplate.exchange("/users/search?username=JamesBond&page=1&size=3",
-                        GET,
-                        new HttpEntity<>(headers),
-                        new ParameterizedTypeReference<PagedResult<UserProfileDto>>() {
-                        });
+        String url = "/users/search?username=Smith&size=3";
+        MockHttpServletResponse response = this.mockMvc.perform(get(url)
+                        .with(jwt()))
+                .andReturn()
+                .getResponse();
 
         //then
-        assertThat(response.getStatusCodeValue()).isEqualTo(200);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody()).hasNoNullFieldsOrProperties();
-        assertThat(response.getBody().getTotalResults()).isEqualTo(5L);
-        assertThat(response.getBody().getTotalPages()).isEqualTo(2);
-        assertThat(response.getBody().getResult().size()).isEqualTo(2);
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getContentAsString()).isEqualTo(this.pagedResultTester.write(
+                new PagedResult<>(Arrays.asList(johnSmith, adamSmith), 0, 1, 2L)).getJson());
     }
 }

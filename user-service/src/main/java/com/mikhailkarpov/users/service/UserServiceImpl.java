@@ -1,8 +1,8 @@
 package com.mikhailkarpov.users.service;
 
 import com.mikhailkarpov.users.domain.UserProfile;
-import com.mikhailkarpov.users.domain.UserProfileIntf;
 import com.mikhailkarpov.users.dto.UserAuthenticationRequest;
+import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.dto.UserRegistrationRequest;
 import com.mikhailkarpov.users.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @CachePut(value = USER_PROFILE_CACHE, key = "#result.id")
     @Transactional
-    public UserProfileIntf create(UserRegistrationRequest request) {
+    public UserProfileDto create(UserRegistrationRequest request) {
 
         String username = request.getUsername();
         String password = request.getPassword();
@@ -58,20 +58,21 @@ public class UserServiceImpl implements UserService {
         user.setEnabled(true);
 
         String userId = this.keycloakAdminClient.createUser(user);
-        return this.userProfileRepository.save(new UserProfile(userId, username, email));
+        UserProfile createdProfile = this.userProfileRepository.save(new UserProfile(userId, username, email));
+        return new UserProfileDto(createdProfile);
     }
 
     @Override
     @Cacheable(value = USER_PROFILE_CACHE, key = "#userId", unless = "#result == null")
     @Transactional(readOnly = true)
-    public Optional<UserProfileIntf> findById(String userId) {
+    public Optional<UserProfileDto> findById(String userId) {
 
         return this.userProfileRepository.findUserProfileById(userId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserProfileIntf> findByUsernameLike(String username, Pageable pageable) {
+    public Page<UserProfileDto> findByUsernameLike(String username, Pageable pageable) {
         return this.userProfileRepository.findAllByUsernameContainingIgnoreCase(username, pageable);
     }
 }
