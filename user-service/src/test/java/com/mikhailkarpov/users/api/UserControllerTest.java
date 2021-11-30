@@ -1,7 +1,6 @@
 package com.mikhailkarpov.users.api;
 
 import com.mikhailkarpov.users.config.SecurityTestConfig;
-import com.mikhailkarpov.users.domain.UserProfile;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.service.UserService;
 import org.junit.jupiter.api.Test;
@@ -16,7 +15,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -48,16 +46,14 @@ class UserControllerTest {
     void givenUserFound_whenGetById_thenOk() throws Exception {
         //given
         String id = UUID.randomUUID().toString();
-        String username = RandomStringUtils.randomAlphabetic(10);
-        String email = username + "@gmail.com";
-        UserProfile profile = new UserProfile(id, username, email);
+        String username = "DonaldTrump";
         UserProfileDto dto = new UserProfileDto(id, username);
 
-        Mockito.when(this.userService.findById(id)).thenReturn(Optional.of(profile));
+        Mockito.when(this.userService.findUserById(id)).thenReturn(Optional.of(dto));
 
         //when
         MockHttpServletResponse response = this.mockMvc.perform(get("/users/{id}/profile", id)
-                .with(jwt()))
+                        .with(jwt()))
                 .andReturn()
                 .getResponse();
 
@@ -70,11 +66,11 @@ class UserControllerTest {
     void givenUserNotFound_whenGetById_thenNotFound() throws Exception {
         //given
         String id = UUID.randomUUID().toString();
-        Mockito.when(this.userService.findById(id)).thenReturn(Optional.empty());
+        Mockito.when(this.userService.findUserById(id)).thenReturn(Optional.empty());
 
         //when
         this.mockMvc.perform(get("/users/{id}/profile", id)
-                .with(jwt()))
+                        .with(jwt()))
                 .andExpect(status().isNotFound());
     }
 
@@ -91,15 +87,15 @@ class UserControllerTest {
     @Test
     void givenProfiles_whenSearchByUsername_thenOk() throws Exception {
         //given
-        UserProfile user1 = new UserProfile("user1", "username1", "username1@example.com");
-        UserProfile user2 = new UserProfile("user2", "username2", "username2@example.com");
+        UserProfileDto user1 = new UserProfileDto("user1", "username1");
+        UserProfileDto user2 = new UserProfileDto("user2", "username2");
 
-        when(this.userService.findByUsernameLike("username", PageRequest.of(1, 2)))
+        when(this.userService.findUsersByUsernameLike("username", PageRequest.of(1, 2)))
                 .thenReturn(new PageImpl<>(Arrays.asList(user1, user2), PageRequest.of(1, 2), 4L));
 
         //when
         this.mockMvc.perform(get("/users/search?username={username}&page=1&size=2", "username")
-                .with(jwt()))
+                        .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").value(1))
                 .andExpect(jsonPath("$.totalPages").value(2))

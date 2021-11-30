@@ -4,90 +4,106 @@ import com.mikhailkarpov.users.config.PersistenceTestConfig;
 import com.mikhailkarpov.users.domain.Following;
 import com.mikhailkarpov.users.domain.FollowingId;
 import com.mikhailkarpov.users.domain.UserProfile;
-import org.junit.jupiter.api.BeforeEach;
+import com.mikhailkarpov.users.dto.UserProfileDto;
+import com.mikhailkarpov.users.messaging.FollowingEvent;
+import com.mikhailkarpov.users.messaging.FollowingEventPublisher;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.jdbc.Sql;
 
-import java.util.Arrays;
+import javax.persistence.EntityManager;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.mikhailkarpov.users.messaging.FollowingEvent.Status.FOLLOWED;
+import static com.mikhailkarpov.users.messaging.FollowingEvent.Status.UNFOLLOWED;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@ContextConfiguration(classes = PersistenceTestConfig.class)
+@ContextConfiguration(classes = {PersistenceTestConfig.class})
+@Sql(scripts = {"/db_scripts/insert_users.sql", "/db_scripts/insert_followings.sql"})
 class FollowingRepositoryTest {
 
     @Autowired
-    private TestEntityManager entityManager;
+    private EntityManager entityManager;
 
     @Autowired
     private FollowingRepository followingRepository;
 
-    private UserProfile user1 = new UserProfile("user1", "user1", "user1@example.com");
-    private UserProfile user2 = new UserProfile("user2", "user2", "user2@example.com");
-    private UserProfile user3 = new UserProfile("user3", "user3", "user3@example.com");
+    @MockBean
+    private FollowingEventPublisher eventPublisher;
 
-    @BeforeEach
-    void saveProfiles() {
-        user1 = entityManager.persist(user1);
-        user2 = entityManager.persist(user2);
-        user3 = entityManager.persist(user3);
-    }
+    @Captor
+    private ArgumentCaptor<FollowingEvent> eventCaptor;
 
     @Test
-    void testSave() {
-        //when
-        Following savedFollowing = followingRepository.save(new Following(user1, user2));
-        Following foundFollowing = entityManager.find(Following.class, savedFollowing.getFollowingId());
-
-        //then
-        assertEquals(savedFollowing, foundFollowing);
-    }
-
-    @Test
-    void testExistsById() {
+    void givenUsers_whenSaveFollowing_thenSaved() {
         //given
-        followingRepository.save(new Following(user1, user2));
+        UserProfile followerUser = this.entityManager.find(UserProfile.class, "2");
+        UserProfile followingUser = this.entityManager.find(UserProfile.class, "1");
+        Following following = new Following(followerUser, followingUser);
 
         //when
-        FollowingId followingId = new FollowingId(user1.getId(), user2.getId());
-        boolean existsById = followingRepository.existsById(followingId);
+        this.followingRepository.save(following);
+        this.entityManager.flush();
 
         //then
-        assertTrue(existsById);
+        FollowingId id = new FollowingId("2", "1");
+        assertThat(this.followingRepository.findById(id)).isPresent();
+        verify(this.eventPublisher).publish(this.eventCaptor.capture());
+
+        assertThat(this.eventCaptor.getValue().getFollowerId()).isEqualTo("2");
+        assertThat(this.eventCaptor.getValue().getFollowingId()).isEqualTo("1");
+        assertThat(this.eventCaptor.getValue().getStatus()).isEqualTo(FOLLOWED);
     }
 
     @Test
-    void testFindFollowers() {
+    void givenFollowers_whenRemoveFollowing_thenRemoved() {
         //given
-        followingRepository.save(new Following(user1, user3));
-        followingRepository.save(new Following(user2, user3));
+        FollowingId id = new FollowingId("2", "3");
 
         //when
-        Page<UserProfile> followersPage = followingRepository.findFollowers(user3.getId(), PageRequest.of(0, 3));
+        this.followingRepository.deleteById(id);
+        this.entityManager.flush();
 
         //then
-        assertEquals(2L, followersPage.getTotalElements());
-        assertIterableEquals(Arrays.asList(user1, user2), followersPage.getContent());
+        assertThat(this.followingRepository.findById(id)).isEmpty();
+        verify(this.eventPublisher).publish(this.eventCaptor.capture());
+
+        assertThat(this.eventCaptor.getValue().getFollowerId()).isEqualTo("2");
+        assertThat(this.eventCaptor.getValue().getFollowingId()).isEqualTo("3");
+        assertThat(this.eventCaptor.getValue().getStatus()).isEqualTo(UNFOLLOWED);
     }
 
     @Test
-    void testFindFollowings() {
-        //given
-        followingRepository.save(new Following(user1, user2));
-        followingRepository.save(new Following(user1, user3));
-
+    void givenFollowers_whenFindFollowers_thenFound() {
         //when
-        Page<UserProfile> followingsPage = followingRepository.findFollowings(user1.getId(), PageRequest.of(0, 3));
+        PageRequest pageRequest = PageRequest.of(0, 3);
+        Page<UserProfileDto> followers = this.followingRepository.findFollowers("3", pageRequest);
 
         //then
-        assertEquals(2L, followingsPage.getTotalElements());
-        assertIterableEquals(Arrays.asList(user2, user3), followingsPage.getContent());
+        assertThat(followers.getNumberOfElements()).isEqualTo(2);
+        assertThat(followers.getContent().get(0).getId()).isEqualTo("1");
+        assertThat(followers.getContent().get(1).getId()).isEqualTo("2");
+    }
+
+    @Test
+    void givenFollowers_whenFindFollowing_thenFound() {
+        //when
+        PageRequest pageRequest = PageRequest.of(0, 3);
+        Page<UserProfileDto> following = this.followingRepository.findFollowing("1", pageRequest);
+
+        //then
+        assertThat(following.getNumberOfElements()).isEqualTo(2);
+        assertThat(following.getContent().get(0).getId()).isEqualTo("2");
+        assertThat(following.getContent().get(1).getId()).isEqualTo("3");
     }
 }

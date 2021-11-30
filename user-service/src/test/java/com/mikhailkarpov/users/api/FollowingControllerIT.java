@@ -1,114 +1,101 @@
 package com.mikhailkarpov.users.api;
 
+import com.mikhailkarpov.users.config.AbstractIT;
+import com.mikhailkarpov.users.config.SecurityTestConfig;
 import com.mikhailkarpov.users.dto.PagedResult;
 import com.mikhailkarpov.users.dto.UserProfileDto;
-import com.mikhailkarpov.users.messaging.FollowingEventPublisher;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
+import org.springframework.boot.test.json.JacksonTester;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlGroup;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.http.HttpMethod.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class FollowingControllerIT extends AbstractControllerIT {
+@SpringBootTest
+@AutoConfigureMockMvc
+@AutoConfigureJsonTesters
+@ContextConfiguration(classes = SecurityTestConfig.class)
+@SqlGroup(value = {
+        @Sql(scripts = {"/db_scripts/insert_users.sql", "/db_scripts/insert_followings.sql"}),
+        @Sql(scripts = {"/db_scripts/delete_followings.sql", "/db_scripts/delete_users.sql"},
+                executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+})
+public class FollowingControllerIT extends AbstractIT {
 
-    @MockBean
-    private FollowingEventPublisher eventPublisher;
-    //todo test messaging
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private JacksonTester<PagedResult<UserProfileDto>> pagedResultTester;
+
+    private final UserProfileDto johnSmith = new UserProfileDto("1", "johnsmith");
+
+    private final UserProfileDto adamSmith = new UserProfileDto("2", "adamsmith");
+
+    private final UserProfileDto jamesBond = new UserProfileDto("3", "jamesbond");
 
     @Test
-    void testFollowingAndUnfollowingCase() {
-        //given
-        String username = RandomStringUtils.randomAlphabetic(10);
-        String userEmail = String.format("%s@example.com", username);
-        String userPassword = "pa55word";
+    void shouldFollow_andUnfollow() throws Exception {
+        this.mockMvc.perform(post("/users/1/followers")
+                .with(jwt().jwt(jwt -> jwt.subject("3"))))
+                .andExpect(status().isOk());
 
-        String followerName = RandomStringUtils.randomAlphabetic(15);
-        String followerEmail = String.format("%s@example.com", followerName);
-        String followerPassword = "password";
+        this.mockMvc.perform(get("/users/1/followers")
+                .with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalResults").value(1))
+                .andExpect(jsonPath("$.result[0].userId").value("3"));
 
-        UserProfileDto user = registerUser(username, userEmail, userPassword);
-        UserProfileDto follower = registerUser(followerName, followerEmail, followerPassword);
+        this.mockMvc.perform(delete("/users/1/followers")
+                .with(jwt().jwt(jwt -> jwt.subject("3"))))
+                .andExpect(status().isOk());
 
-        //when
-        loginAndFollowUser(followerName, followerPassword, user.getId());
-        PagedResult<UserProfileDto> followers = getFollowers(username, userPassword, user.getId());
-        PagedResult<UserProfileDto> followings = getFollowings(username, userPassword, follower.getId());
-
-        //then
-        assertThat(followers.getResult()).containsOnly(follower);
-        assertThat(followings.getResult()).containsOnly(user);
-
-        //and when
-        loginAndUnfollowUser(followerName, followerPassword, user.getId());
-        followers = getFollowers(followerName, followerPassword, user.getId());
-        followings = getFollowings(username, userPassword, follower.getId());
-
-        //then
-        assertThat(followers.getResult()).isEmpty();
-        assertThat(followings.getResult()).isEmpty();
+        this.mockMvc.perform(get("/users/1/followers")
+                .with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalResults").value(0));
     }
 
-    private void loginAndFollowUser(String username, String password, String userId) {
+    @Test
+    void shouldGetFollowers() throws Exception {
         //when
-        HttpHeaders headers = loginAndBuildAuthorizationHeader(username, password);
-        ResponseEntity<Void> followingResponse =
-                this.restTemplate.exchange("/users/{id}/followers", POST, new HttpEntity<>(headers), Void.class, userId);
+        MockHttpServletResponse response = this.mockMvc.perform(get("/users/3/followers?page=0&size=3")
+                .with(jwt()))
+                .andReturn()
+                .getResponse();
 
         //then
-        assertThat(followingResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getContentAsString()).isEqualTo(pagedResultTester.write(
+                new PagedResult<>(Arrays.asList(johnSmith, adamSmith), 0, 1, 2L)
+        ).getJson());
     }
 
-    private void loginAndUnfollowUser(String username, String password, String userId) {
+    @Test
+    void shouldGetFollowing() throws Exception {
         //when
-        HttpHeaders headers = loginAndBuildAuthorizationHeader(username, password);
-        ResponseEntity<Void> followingResponse =
-                this.restTemplate.exchange("/users/{id}/followers", DELETE, new HttpEntity<>(headers), Void.class, userId);
+        MockHttpServletResponse response = this.mockMvc.perform(get("/users/1/following?page=0&size=3")
+                .with(jwt()))
+                .andReturn()
+                .getResponse();
 
         //then
-        assertThat(followingResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    private PagedResult<UserProfileDto> getFollowers(String username, String password, String userId) {
-        //given
-        HttpHeaders headers = loginAndBuildAuthorizationHeader(username, password);
-        ParameterizedTypeReference<PagedResult<UserProfileDto>> typeRef =
-                new ParameterizedTypeReference<PagedResult<UserProfileDto>>() {
-                };
-
-        //when
-        ResponseEntity<PagedResult<UserProfileDto>> response =
-                this.restTemplate.exchange("/users/{id}/followers", GET, new HttpEntity<>(headers), typeRef, userId);
-
-        //then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-
-        return response.getBody();
-    }
-
-    private PagedResult<UserProfileDto> getFollowings(String username, String password, String userId) {
-        //given
-        HttpHeaders headers = loginAndBuildAuthorizationHeader(username, password);
-        ParameterizedTypeReference<PagedResult<UserProfileDto>> typeRef =
-                new ParameterizedTypeReference<PagedResult<UserProfileDto>>() {
-                };
-
-        //when
-        ResponseEntity<PagedResult<UserProfileDto>> response =
-                this.restTemplate.exchange("/users/{id}/followings", GET, new HttpEntity<>(headers), typeRef, userId);
-
-        //then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-
-        return response.getBody();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getContentAsString()).isEqualTo(pagedResultTester.write(
+                new PagedResult<>(Arrays.asList(adamSmith, jamesBond), 0, 1, 2L)
+        ).getJson());
     }
 }

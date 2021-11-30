@@ -1,6 +1,5 @@
 package com.mikhailkarpov.users.api;
 
-import com.mikhailkarpov.users.domain.UserProfile;
 import com.mikhailkarpov.users.dto.PagedResult;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.service.UserService;
@@ -13,9 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @RestController
 @RequiredArgsConstructor
 public class UserController {
@@ -25,17 +21,15 @@ public class UserController {
     @GetMapping("/users/{id}/profile")
     public ResponseEntity<UserProfileDto> findById(@PathVariable String id) {
 
-        return this.userService.findById(id)
-                .map(profile -> ResponseEntity.ok(UserProfileDto.from(profile)))
+        return this.userService.findUserById(id)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/users/search")
     public PagedResult<UserProfileDto> findByUsernameLike(@RequestParam String username, Pageable pageable) {
 
-        Page<UserProfileDto> profileDtoPage = this.userService.findByUsernameLike(username, pageable)
-                .map(UserProfileDto::from);
-
-        return new PagedResult<>(profileDtoPage);
+        Page<UserProfileDto> profiles = this.userService.findUsersByUsernameLike(username, pageable);
+        return new PagedResult<>(profiles);
     }
 }

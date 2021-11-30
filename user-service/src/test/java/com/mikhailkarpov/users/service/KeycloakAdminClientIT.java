@@ -27,8 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(SpringExtension.class)
 @EnableConfigurationProperties
 @ContextConfiguration(classes = {KeycloakAdminConfig.class, KeycloakAdminClientImpl.class})
-@TestPropertySource(locations = "classpath:keycloak-admin-client-test.properties")
-class KeycloakAdminClientImplIT {
+class KeycloakAdminClientIT {
 
     static final KeycloakContainer KEYCLOAK;
 
@@ -42,15 +41,13 @@ class KeycloakAdminClientImplIT {
     @DynamicPropertySource
     static void configKeycloak(DynamicPropertyRegistry registry) {
         registry.add("app.keycloak.serverUrl", KEYCLOAK::getAuthServerUrl);
+        registry.add("app.keycloak.realm", () -> "bloggingnetwork");
+        registry.add("app.keycloak.adminUsername", () -> "admin");
+        registry.add("app.keycloak.adminPassword", () -> "admin");
     }
 
     @Autowired
     private KeycloakAdminClientImpl keycloakAdminClient;
-
-    @Test
-    void contextLoads() {
-        assertThat(this.keycloakAdminClient).isNotNull();
-    }
 
     @Test
     void givenUserRepresentation_whenCreateUserAndFindById_thenCreatedAndFound() {

@@ -5,6 +5,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.RabbitMQContainer;
 
 public abstract class AbstractIT {
 
@@ -13,6 +14,8 @@ public abstract class AbstractIT {
     static final KeycloakContainer KEYCLOAK;
 
     static final GenericContainer REDIS;
+
+    static final RabbitMQContainer RABBIT_MQ;
 
     static {
         POSTGRES = new PostgreSQLContainer("postgres")
@@ -25,9 +28,12 @@ public abstract class AbstractIT {
 
         REDIS = new GenericContainer("redis").withExposedPorts(6379);
 
+        RABBIT_MQ = new RabbitMQContainer("rabbitmq").withExposedPorts(5672);
+
         POSTGRES.start();
         KEYCLOAK.start();
         REDIS.start();
+        RABBIT_MQ.start();
     }
 
     @DynamicPropertySource
@@ -50,5 +56,11 @@ public abstract class AbstractIT {
         registry.add("spring.datasource.driver-class-name", () -> POSTGRES.getDriverClassName());
         registry.add("spring.datasource.username", () -> POSTGRES.getUsername());
         registry.add("spring.datasource.password", () -> POSTGRES.getPassword());
+    }
+
+    @DynamicPropertySource
+    static void configRabbitMQ(DynamicPropertyRegistry registry) {
+        registry.add("spring.rabbitmq.host", () -> RABBIT_MQ.getHost());
+        registry.add("spring.rabbitmq.port", () -> RABBIT_MQ.getAmqpPort());
     }
 }

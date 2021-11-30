@@ -7,6 +7,11 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        generate_statistics: true
+        session.events.log.LOG_QUERIES_SLOWER_THAN_MS: 3
 
 eureka:
   client:
@@ -18,3 +23,8 @@ app:
     realm: bloggingnetwork
     adminUsername: admin
     adminPassword: admin
+
+logging:
+  level:
+    org.hibernate.stat: DEBUG
+    org.hibernate.SQL: DEBUG

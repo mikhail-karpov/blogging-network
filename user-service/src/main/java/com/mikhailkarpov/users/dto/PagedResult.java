@@ -25,6 +25,13 @@ public class PagedResult<T> {
     @JsonProperty("totalResults")
     private long totalResults;
 
+    public PagedResult(List<T> result, int page, int totalPages, long totalResults) {
+        this.result = result;
+        this.page = page;
+        this.totalPages = totalPages;
+        this.totalResults = totalResults;
+    }
+
     public PagedResult(Page<T> page) {
         this.result = page.getContent();
         this.page = page.getNumber();

@@ -1,6 +1,5 @@
 package com.mikhailkarpov.users.api;
 
-import com.mikhailkarpov.users.domain.UserProfile;
 import com.mikhailkarpov.users.dto.UserAuthenticationRequest;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.dto.UserRegistrationRequest;
@@ -29,16 +28,16 @@ public class AccountController {
     public ResponseEntity<UserProfileDto> create(@Valid @RequestBody UserRegistrationRequest request,
                                                  UriComponentsBuilder uriComponentsBuilder) {
 
-        UserProfile profile = userService.create(request);
+        UserProfileDto profile = userService.registerUser(request);
         URI location = uriComponentsBuilder.path("/account/profile").build().toUri();
 
-        return ResponseEntity.created(location).body(UserProfileDto.from(profile));
+        return ResponseEntity.created(location).body(profile);
     }
 
     @PostMapping("/account/login")
     public AccessTokenResponse login(@Valid @RequestBody UserAuthenticationRequest request) {
 
-        return userService.authenticate(request);
+        return userService.authenticateUser(request);
     }
 
     @GetMapping("/account/profile")
@@ -46,8 +45,8 @@ public class AccountController {
 
         String userId = jwt.getSubject();
 
-        return this.userService.findById(userId)
-                .map(profile -> ResponseEntity.ok(UserProfileDto.from(profile)))
+        return this.userService.findUserById(userId)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 }

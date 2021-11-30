@@ -3,17 +3,15 @@ package com.mikhailkarpov.users.domain;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.*;
-import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Set;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "user_profile")
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // for JPA
-public class UserProfile extends BaseEntity implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class UserProfile extends BaseEntity {
 
     @Id
     private String id;
@@ -23,12 +21,6 @@ public class UserProfile extends BaseEntity implements Serializable {
 
     @Column(name = "email", nullable = false, unique = true)
     private String email;
-
-    @OneToMany(mappedBy = "follower", orphanRemoval = true)
-    private final Set<Following> followers = new HashSet<>();
-
-    @OneToMany(mappedBy = "user", orphanRemoval = true)
-    private final Set<Following> followings = new HashSet<>();
 
     public UserProfile(String id, String username, String email) {
         this.id = id;
