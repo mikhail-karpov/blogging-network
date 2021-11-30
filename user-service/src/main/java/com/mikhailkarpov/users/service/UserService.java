@@ -11,11 +11,11 @@ import java.util.Optional;
 
 public interface UserService {
 
-    AccessTokenResponse authenticate(UserAuthenticationRequest request);
+    AccessTokenResponse authenticateUser(UserAuthenticationRequest request);
 
-    UserProfileDto create(UserRegistrationRequest request);
+    UserProfileDto registerUser(UserRegistrationRequest request);
 
-    Optional<UserProfileDto> findById(String id);
+    Optional<UserProfileDto> findUserById(String id);
 
-    Page<UserProfileDto> findByUsernameLike(String username, Pageable pageable);
+    Page<UserProfileDto> findUsersByUsernameLike(String username, Pageable pageable);
 }

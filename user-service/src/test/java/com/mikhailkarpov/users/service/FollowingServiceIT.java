@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlGroup;
 
 import java.util.UUID;
 
@@ -18,14 +19,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
+@SqlGroup(value = {
+        @Sql(scripts = {"/db_scripts/insert_users.sql", "/db_scripts/insert_followings.sql"}),
+        @Sql(scripts = {"/db_scripts/delete_followings.sql", "/db_scripts/delete_users.sql"},
+                executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+})
 public class FollowingServiceIT extends AbstractIT {
 
     @Autowired
     private FollowingService followingService;
 
     @Test
-    @Sql(scripts = "/db_scripts/insert_users.sql")
-    @Sql(scripts = "/db_scripts/delete_users.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     void shouldAddFollowerAndRemoveFollower() {
         //when
         this.followingService.addToFollowers("1", "3");
@@ -44,9 +48,6 @@ public class FollowingServiceIT extends AbstractIT {
     }
 
     @Test
-    @Sql(scripts = {"/db_scripts/insert_users.sql", "/db_scripts/insert_followings.sql"})
-    @Sql(scripts = {"/db_scripts/delete_followings.sql", "/db_scripts/delete_users.sql"},
-            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     void shouldThrow_whenAddDuplicateFollower() {
 
         assertThatThrownBy(() -> this.followingService.addToFollowers("3", "1"))
@@ -54,8 +55,6 @@ public class FollowingServiceIT extends AbstractIT {
     }
 
     @Test
-    @Sql(scripts = {"/db_scripts/insert_users.sql"})
-    @Sql(scripts = {"/db_scripts/delete_users.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     void shouldThrow_whenAddFollowerAndUserNotFound() {
         //given
         String notFoundId = UUID.randomUUID().toString();
@@ -71,13 +70,15 @@ public class FollowingServiceIT extends AbstractIT {
     @Test
     void shouldThrow_whenRemoveNotExistingFollowing() {
 
-        assertThatThrownBy(() -> this.followingService.removeFromFollowers("1", "3"))
+        assertThatThrownBy(() -> this.followingService.removeFromFollowers("2", "3"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
-    @Sql(scripts = "/db_scripts/insert_users.sql")
-    @Sql(scripts = "/db_scripts/delete_users.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+    @SqlGroup(value = {
+            @Sql(scripts = "/db_scripts/insert_users.sql"),
+            @Sql(scripts = "/db_scripts/delete_users.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+    })
     void shouldThrow_whenRemoveFollowerAndUserNotFound() {
         //given
         String notFoundId = UUID.randomUUID().toString();
@@ -91,9 +92,6 @@ public class FollowingServiceIT extends AbstractIT {
     }
 
     @Test
-    @Sql(scripts = {"/db_scripts/insert_users.sql", "/db_scripts/insert_followings.sql"})
-    @Sql(scripts = {"/db_scripts/delete_followings.sql", "/db_scripts/delete_users.sql"},
-            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     void shouldFindFollowers() {
         //when
         PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.ASC, "id"));
@@ -108,9 +106,6 @@ public class FollowingServiceIT extends AbstractIT {
     }
 
     @Test
-    @Sql(scripts = {"/db_scripts/insert_users.sql", "/db_scripts/insert_followings.sql"})
-    @Sql(scripts = {"/db_scripts/delete_followings.sql", "/db_scripts/delete_users.sql"},
-            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     void shouldFindFollowing() {
         //when
         PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.ASC, "id"));

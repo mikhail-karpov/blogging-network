@@ -54,11 +54,12 @@ public class FollowingServiceImpl implements FollowingService {
     @Transactional
     public void removeFromFollowers(String userId, String followerId) {
 
-        if (!this.followingRepository.existsById(new FollowingId(followerId, userId))) {
+        FollowingId id = new FollowingId(followerId, userId);
+
+        if (!this.followingRepository.existsById(id)) {
             throw new ResourceNotFoundException("Relationship not found");
         }
 
-        FollowingId id = new FollowingId(followerId, userId);
         this.followingRepository.deleteById(id);
     }
 

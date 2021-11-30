@@ -12,8 +12,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlGroup;
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
 import javax.ws.rs.WebApplicationException;
@@ -30,53 +30,45 @@ class UserServiceIT extends AbstractIT {
     private UserService userService;
 
     @Test
-    void givenRequest_whenCreateUser_thenCreated() {
+    void shouldCreateUserAndAuthenticate() {
         //given
-        UserRegistrationRequest request = DtoUtils.createRandomRequest();
+        UserRegistrationRequest registrationRequest = DtoUtils.createRandomRequest();
 
         //when
-        UserProfileDto profile = this.userService.create(request);
+        UserProfileDto profile = this.userService.registerUser(registrationRequest);
 
         //then
         assertThat(profile.getId()).isNotNull();
-        assertThat(profile.getUsername()).isEqualTo(request.getUsername());
-    }
+        assertThat(profile.getUsername()).isEqualTo(registrationRequest.getUsername());
 
-    @Test
-    void givenCreatedUser_whenAuthenticate_thenTokenIsReturned() {
-        //given
-        UserRegistrationRequest createUserRequest = DtoUtils.createRandomRequest();
-        this.userService.create(createUserRequest);
-
-        //when
+        //and when
         UserAuthenticationRequest authenticationRequest =
-                new UserAuthenticationRequest(createUserRequest.getUsername(), createUserRequest.getPassword());
-        AccessTokenResponse tokenResponse = this.userService.authenticate(authenticationRequest);
+                new UserAuthenticationRequest(registrationRequest.getUsername(), registrationRequest.getPassword());
+        AccessTokenResponse tokenResponse = this.userService.authenticateUser(authenticationRequest);
 
         //then
         assertThat(tokenResponse.getToken()).isNotNull();
     }
 
     @Test
-    void givenNoUser_whenAuthenticate_thenException() {
+    void givenInvalidCredentials_whenAuthenticate_thenException() {
         //given
         String username = RandomStringUtils.randomAlphabetic(10);
         String password = RandomStringUtils.randomAlphabetic(10);
         UserAuthenticationRequest request = new UserAuthenticationRequest(username, password);
 
         //then
-        assertThatThrownBy(() -> this.userService.authenticate(request)).isInstanceOf(WebApplicationException.class);
+        assertThatThrownBy(() -> this.userService.authenticateUser(request)).isInstanceOf(WebApplicationException.class);
     }
 
     @Test
-    @Sql(
-            scripts = {"/db_scripts/insert_users.sql"})
-    @Sql(
-            scripts = {"/db_scripts/delete_users.sql"},
-            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+    @SqlGroup(value = {
+            @Sql(scripts = "/db_scripts/insert_users.sql"),
+            @Sql(scripts = "/db_scripts/delete_users.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+    })
     void givenUser_whenFindById_thenFound() {
         //when
-        Optional<UserProfileDto> foundProfile = this.userService.findById("1");
+        Optional<UserProfileDto> foundProfile = this.userService.findUserById("1");
 
         //then
         assertThat(foundProfile).isPresent();
@@ -90,22 +82,21 @@ class UserServiceIT extends AbstractIT {
         String userId = UUID.randomUUID().toString();
 
         //when
-        Optional<UserProfileDto> profile = this.userService.findById(userId);
+        Optional<UserProfileDto> profile = this.userService.findUserById(userId);
 
         //then
         assertThat(profile).isEmpty();
     }
 
     @Test
-    @Sql(
-            scripts = {"/db_scripts/insert_users.sql"})
-    @Sql(
-            scripts = {"/db_scripts/delete_users.sql"},
-            executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+    @SqlGroup(value = {
+            @Sql(scripts = "/db_scripts/insert_users.sql"),
+            @Sql(scripts = "/db_scripts/delete_users.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+    })
     void givenUsers_whenFindByUsername_thenFound() {
         //when
         PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.ASC, "username"));
-        Page<UserProfileDto> profiles = this.userService.findByUsernameLike("Smith", pageRequest);
+        Page<UserProfileDto> profiles = this.userService.findUsersByUsernameLike("Smith", pageRequest);
 
         //then
         assertThat(profiles.getTotalPages()).isEqualTo(1);
@@ -119,29 +110,38 @@ class UserServiceIT extends AbstractIT {
     void givenDuplicateUsername_whenCreateUser_thenException() {
         //given
         String username = RandomStringUtils.randomAlphabetic(10);
-        this.userService.create(new UserRegistrationRequest(username, "fakes@example.com", "pa55word"));
+        UserRegistrationRequest request =
+                new UserRegistrationRequest(username, String.format("%s@example.com", username), "pa55word");
+        UserRegistrationRequest duplicateUsernameRequest =
+                new UserRegistrationRequest(username, String.format("%s@fake.com", username), "password");
 
         //then
-        assertThatThrownBy(() -> this.userService.create(
-                new UserRegistrationRequest(username, "example@fake.com", "password")))
+        this.userService.registerUser(request);
+        assertThatThrownBy(() -> this.userService.registerUser(duplicateUsernameRequest))
                 .isInstanceOf(WebApplicationException.class);
 
-        assertThat(this.userService.findByUsernameLike(username, PageRequest.of(1, 5)).getTotalElements())
+        assertThat(this.userService.findUsersByUsernameLike(username, PageRequest.of(1, 5)).getTotalElements())
                 .isEqualTo(1L);
     }
 
     @Test
     void givenDuplicateEmail_whenCreateUser_thenException() {
         //given
+        String username = RandomStringUtils.randomAlphabetic(10);
         String email = String.format("%s@example.com", RandomStringUtils.randomAlphabetic(5));
-        this.userService.create(new UserRegistrationRequest("Foo", email, "password"));
+
+        UserRegistrationRequest request =
+                new UserRegistrationRequest(username, email, "pa55word");
+        UserRegistrationRequest duplicateEmailRequest =
+                new UserRegistrationRequest(username + "a", email, "password");
 
         //then
-        assertThatThrownBy(() -> this.userService.create(
-                new UserRegistrationRequest("Bar", email, "pa55word")))
+        this.userService.registerUser(request);
+
+        assertThatThrownBy(() -> this.userService.registerUser(duplicateEmailRequest))
                 .isInstanceOf(WebApplicationException.class);
 
-        assertThat(this.userService.findByUsernameLike("Foo", PageRequest.of(1, 5)).getTotalElements())
+        assertThat(this.userService.findUsersByUsernameLike(username, PageRequest.of(1, 5)).getTotalElements())
                 .isEqualTo(1L);
     }
 }

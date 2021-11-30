@@ -31,14 +31,14 @@ public class UserServiceImpl implements UserService {
     private final KeycloakAdminClient keycloakAdminClient;
 
     @Override
-    public AccessTokenResponse authenticate(UserAuthenticationRequest request) {
+    public AccessTokenResponse authenticateUser(UserAuthenticationRequest request) {
         return keycloakAdminClient.obtainAccessToken(request.getUsername(), request.getPassword());
     }
 
     @Override
     @CachePut(value = USER_PROFILE_CACHE, key = "#result.id")
     @Transactional
-    public UserProfileDto create(UserRegistrationRequest request) {
+    public UserProfileDto registerUser(UserRegistrationRequest request) {
 
         String username = request.getUsername();
         String password = request.getPassword();
@@ -65,14 +65,14 @@ public class UserServiceImpl implements UserService {
     @Override
     @Cacheable(value = USER_PROFILE_CACHE, key = "#userId", unless = "#result == null")
     @Transactional(readOnly = true)
-    public Optional<UserProfileDto> findById(String userId) {
+    public Optional<UserProfileDto> findUserById(String userId) {
 
         return this.userProfileRepository.findUserProfileById(userId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserProfileDto> findByUsernameLike(String username, Pageable pageable) {
+    public Page<UserProfileDto> findUsersByUsernameLike(String username, Pageable pageable) {
         return this.userProfileRepository.findAllByUsernameContainingIgnoreCase(username, pageable);
     }
 }

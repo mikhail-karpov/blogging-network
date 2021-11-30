@@ -21,7 +21,7 @@ public class UserController {
     @GetMapping("/users/{id}/profile")
     public ResponseEntity<UserProfileDto> findById(@PathVariable String id) {
 
-        return this.userService.findById(id)
+        return this.userService.findUserById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -29,7 +29,7 @@ public class UserController {
     @GetMapping("/users/search")
     public PagedResult<UserProfileDto> findByUsernameLike(@RequestParam String username, Pageable pageable) {
 
-        Page<UserProfileDto> profiles = this.userService.findByUsernameLike(username, pageable);
+        Page<UserProfileDto> profiles = this.userService.findUsersByUsernameLike(username, pageable);
         return new PagedResult<>(profiles);
     }
 }

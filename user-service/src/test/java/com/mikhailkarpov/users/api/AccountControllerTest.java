@@ -49,7 +49,7 @@ class AccountControllerTest {
         //given
         UserRegistrationRequest request =
                 new UserRegistrationRequest("username", "user@example.com", "password");
-        when(this.userService.create(request)).thenReturn(profile);
+        when(this.userService.registerUser(request)).thenReturn(profile);
 
         //when
         this.mockMvc.perform(post("/account/registration")
@@ -60,7 +60,7 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.userId").value(this.profile.getId()))
                 .andExpect(jsonPath("$.username").value("username"));
 
-        verify(this.userService).create(request);
+        verify(this.userService).registerUser(request);
     }
 
     @ParameterizedTest
@@ -91,7 +91,7 @@ class AccountControllerTest {
         AccessTokenResponse response = new AccessTokenResponse();
         response.setToken(token);
 
-        when(this.userService.authenticate(request)).thenReturn(response);
+        when(this.userService.authenticateUser(request)).thenReturn(response);
 
         //when
         this.mockMvc.perform(post("/account/login")
@@ -100,14 +100,14 @@ class AccountControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.access_token").value(token));
 
-        verify(userService).authenticate(request);
+        verify(userService).authenticateUser(request);
     }
 
     @Test
     void givenJwt_whenGetProfile_thenOk() throws Exception {
         //given
         String userId = this.profile.getId();
-        when(this.userService.findById(userId)).thenReturn(Optional.of(profile));
+        when(this.userService.findUserById(userId)).thenReturn(Optional.of(profile));
 
         //when
         this.mockMvc.perform(get("/account/profile")

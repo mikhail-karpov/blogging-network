@@ -30,7 +30,7 @@ class UserServiceCacheIT extends AbstractIT {
         UserRegistrationRequest request = DtoUtils.createRandomRequest();
 
         //when
-        UserProfileDto createdProfile = this.userService.create(request);
+        UserProfileDto createdProfile = this.userService.registerUser(request);
         Optional<UserProfileDto> cachedProfile = findFromCacheById(createdProfile.getId());
 
         //then
@@ -44,8 +44,8 @@ class UserServiceCacheIT extends AbstractIT {
         UserRegistrationRequest request = DtoUtils.createRandomRequest();
 
         //when
-        UserProfileDto created = this.userService.create(request);
-        Optional<UserProfileDto> found = this.userService.findById(created.getId());
+        UserProfileDto created = this.userService.registerUser(request);
+        Optional<UserProfileDto> found = this.userService.findUserById(created.getId());
         Optional<UserProfileDto> cached = findFromCacheById(created.getId());
 
         //then
@@ -62,7 +62,7 @@ class UserServiceCacheIT extends AbstractIT {
         String userId = UUID.randomUUID().toString();
 
         //then
-        assertThat(this.userService.findById(userId)).isEmpty();
+        assertThat(this.userService.findUserById(userId)).isEmpty();
         assertThat(findFromCacheById(userId)).isEmpty();
     }
 

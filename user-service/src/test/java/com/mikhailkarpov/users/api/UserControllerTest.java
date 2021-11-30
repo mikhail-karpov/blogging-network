@@ -49,7 +49,7 @@ class UserControllerTest {
         String username = "DonaldTrump";
         UserProfileDto dto = new UserProfileDto(id, username);
 
-        Mockito.when(this.userService.findById(id)).thenReturn(Optional.of(dto));
+        Mockito.when(this.userService.findUserById(id)).thenReturn(Optional.of(dto));
 
         //when
         MockHttpServletResponse response = this.mockMvc.perform(get("/users/{id}/profile", id)
@@ -66,7 +66,7 @@ class UserControllerTest {
     void givenUserNotFound_whenGetById_thenNotFound() throws Exception {
         //given
         String id = UUID.randomUUID().toString();
-        Mockito.when(this.userService.findById(id)).thenReturn(Optional.empty());
+        Mockito.when(this.userService.findUserById(id)).thenReturn(Optional.empty());
 
         //when
         this.mockMvc.perform(get("/users/{id}/profile", id)
@@ -90,7 +90,7 @@ class UserControllerTest {
         UserProfileDto user1 = new UserProfileDto("user1", "username1");
         UserProfileDto user2 = new UserProfileDto("user2", "username2");
 
-        when(this.userService.findByUsernameLike("username", PageRequest.of(1, 2)))
+        when(this.userService.findUsersByUsernameLike("username", PageRequest.of(1, 2)))
                 .thenReturn(new PageImpl<>(Arrays.asList(user1, user2), PageRequest.of(1, 2), 4L));
 
         //when

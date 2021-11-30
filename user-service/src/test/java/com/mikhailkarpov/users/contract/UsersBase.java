@@ -42,10 +42,10 @@ public class UsersBase {
         String userId = UUID.randomUUID().toString();
         String username = RandomStringUtils.randomAlphabetic(10);
 
-        Mockito.when(this.userService.findById("0"))
+        Mockito.when(this.userService.findUserById("0"))
                 .thenReturn(Optional.empty());
 
-        Mockito.when(this.userService.findById(not(ArgumentMatchers.eq("0"))))
+        Mockito.when(this.userService.findUserById(not(ArgumentMatchers.eq("0"))))
                 .thenReturn(Optional.of(new UserProfileDto(userId, username)));
     }
 }

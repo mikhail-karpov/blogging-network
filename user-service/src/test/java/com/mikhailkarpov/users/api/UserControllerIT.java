@@ -13,6 +13,7 @@ import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlGroup;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
@@ -21,13 +22,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @AutoConfigureMockMvc
 @AutoConfigureJsonTesters
 @ContextConfiguration(classes = SecurityTestConfig.class)
-@Sql(scripts = {"/db_scripts/insert_users.sql", "/db_scripts/insert_followings.sql"})
-@Sql(scripts = {"/db_scripts/delete_followings.sql", "/db_scripts/delete_users.sql"},
-        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@SqlGroup(value = {
+        @Sql(scripts = "/db_scripts/insert_users.sql"),
+        @Sql(scripts = "/db_scripts/delete_users.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+})
 class UserControllerIT extends AbstractIT {
 
     @Autowired
@@ -40,13 +42,14 @@ class UserControllerIT extends AbstractIT {
     private JacksonTester<PagedResult<UserProfileDto>> pagedResultTester;
 
     private final UserProfileDto johnSmith = new UserProfileDto("1", "johnsmith");
+
     private final UserProfileDto adamSmith = new UserProfileDto("2", "adamsmith");
 
     @Test
     void givenUsers_whenGetProfile_thenOk() throws Exception {
         //when
-        MockHttpServletResponse response = this.mockMvc.perform(get("/users/1profile")
-                        .with(jwt()))
+        MockHttpServletResponse response = this.mockMvc.perform(get("/users/1/profile")
+                .with(jwt()))
                 .andReturn()
                 .getResponse();
 
@@ -60,7 +63,7 @@ class UserControllerIT extends AbstractIT {
         //when
         String url = "/users/search?username=Smith&size=3";
         MockHttpServletResponse response = this.mockMvc.perform(get(url)
-                        .with(jwt()))
+                .with(jwt()))
                 .andReturn()
                 .getResponse();
 
