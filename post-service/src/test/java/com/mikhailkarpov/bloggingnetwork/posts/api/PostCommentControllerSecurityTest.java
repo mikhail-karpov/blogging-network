@@ -1,11 +1,16 @@
 package com.mikhailkarpov.bloggingnetwork.posts.api;
 
+import com.mikhailkarpov.bloggingnetwork.posts.config.SecurityTestConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.PostComment;
 import com.mikhailkarpov.bloggingnetwork.posts.service.PostCommentService;
+import com.mikhailkarpov.bloggingnetwork.posts.service.UserService;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -15,7 +20,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PostCommentController.class)
-class PostCommentControllerSecurityTest extends AbstractControllerTest {
+@ContextConfiguration(classes = SecurityTestConfig.class)
+class PostCommentControllerSecurityTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private UserService userService;
 
     @MockBean
     private PostCommentService postCommentService;

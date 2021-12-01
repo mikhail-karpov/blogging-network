@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public interface PostCommentService {
 
-    PostComment addComment(UUID postId, PostComment postComment);
+    UUID createComment(UUID postId, String userId, String comment);
 
     Page<PostComment> findAllByPostId(UUID postId, Pageable pageable);
 

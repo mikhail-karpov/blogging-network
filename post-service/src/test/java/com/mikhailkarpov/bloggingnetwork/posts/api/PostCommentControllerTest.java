@@ -1,9 +1,12 @@
 package com.mikhailkarpov.bloggingnetwork.posts.api;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mikhailkarpov.bloggingnetwork.posts.config.SecurityTestConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.PostComment;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.CreatePostCommentRequest;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.service.PostCommentService;
+import com.mikhailkarpov.bloggingnetwork.posts.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -11,11 +14,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
 import java.util.Arrays;
@@ -33,10 +39,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = PostCommentController.class)
-class PostCommentControllerTest extends AbstractControllerTest {
+@ContextConfiguration(classes = SecurityTestConfig.class)
+class PostCommentControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockBean
-    PostCommentService postCommentService;
+    private PostCommentService postCommentService;
+
+    @MockBean
+    private UserService userService;
 
     @Captor
     private ArgumentCaptor<PostComment> commentArgumentCaptor;
@@ -49,20 +65,18 @@ class PostCommentControllerTest extends AbstractControllerTest {
         PostComment postComment = new PostComment(userId, "post comment");
         String expectedLocation = "http://localhost/posts/" + postId + "/comments/" + postComment.getId();
 
-        when(postCommentService.addComment(any(), any())).thenReturn(postComment);
+        when(postCommentService.createComment(postId, userId, "post comment")).thenReturn(postComment.getId());
 
         //when
         mockMvc.perform(post("/posts/{id}/comments", postId)
                         .with(jwt().jwt(jwt -> jwt.subject(userId)))
                         .contentType(APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreatePostCommentRequest("comment"))))
+                        .content("{\"comment\":\"post comment\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", expectedLocation));
 
         //then
-        verify(postCommentService).addComment(eq(postId), commentArgumentCaptor.capture());
-        assertThat(commentArgumentCaptor.getValue().getUserId()).isEqualTo(userId);
-        assertThat(commentArgumentCaptor.getValue().getContent()).isEqualTo("comment");
+        verify(postCommentService).createComment(postId, userId, "post comment");
     }
 
     @ParameterizedTest

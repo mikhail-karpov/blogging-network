@@ -1,112 +1,118 @@
 package com.mikhailkarpov.bloggingnetwork.posts.service;
 
-import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
+import com.mikhailkarpov.bloggingnetwork.posts.config.PersistenceTestConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.PostComment;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostCommentRepository;
-import com.mikhailkarpov.bloggingnetwork.posts.util.EntityUtils;
+import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.jdbc.Sql;
+import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
-import java.util.Collections;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(SpringExtension.class)
-class PostCommentServiceImplTest {
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ContextConfiguration(classes = PersistenceTestConfig.class)
+public class PostCommentServiceImplTest {
 
-    @Mock
-    private PostService postService;
+    @Autowired
+    PostCommentRepository commentRepository;
 
-    @Mock
-    private PostCommentRepository commentRepository;
+    @Autowired
+    PostRepository postRepository;
 
-    @InjectMocks
-    private PostCommentServiceImpl postCommentService;
+    PostCommentServiceImpl postCommentService;
 
-    private final Post post = EntityUtils.createRandomPost(35);
-    private final UUID postId = post.getId();
-    private final PostComment comment = EntityUtils.createRandomPostComment(25);
-    private final PageRequest pageRequest = PageRequest.of(2, 4);
-    private final Page<PostComment> commentPage =
-            new PageImpl<>(Collections.singletonList(comment), pageRequest, 9L);
-
-    @Test
-    void givenPost_whenAddComment_thenSaved() {
-        //given
-        when(postService.findById(postId, true)).thenReturn(Optional.of(post));
-
-        //when
-        PostComment savedComment = postCommentService.addComment(postId, comment);
-
-        //then
-        assertThat(savedComment).isEqualTo(comment);
-
-        verify(postService).findById(postId, true);
-        verify(postService).save(post);
+    @BeforeEach
+    void setUp() {
+        this.postCommentService = new PostCommentServiceImpl(postRepository, commentRepository);
     }
 
     @Test
-    void givenNoPost_whenAddComment_thenThrown() {
+    @Sql(scripts = "/db_scripts/insert_posts.sql")
+    void givenPost_whenCreateComment_thenCommentIsFound() {
         //given
-        when(postService.findById(postId, true)).thenReturn(Optional.empty());
-
-        //then
-        assertThatThrownBy(() -> postCommentService.addComment(postId, comment))
-                .isInstanceOf(ResourceNotFoundException.class);
-
-        verify(postService).findById(postId, true);
-        verifyNoMoreInteractions(postService);
-    }
-
-    @Test
-    void givenComments_whenFindAllByPostId_thenFound() {
-        //given
-        when(commentRepository.findAllByPostId(postId, pageRequest)).thenReturn(commentPage);
+        UUID postId = UUID.fromString("e7365159-8d52-4adb-9355-9787a63d945d");
+        String userId = UUID.randomUUID().toString();
+        String comment = RandomStringUtils.random(16);
 
         //when
-        Page<PostComment> foundCommentPage = postCommentService.findAllByPostId(postId, pageRequest);
-
-        //then
-        assertThat(foundCommentPage).usingRecursiveComparison().isEqualTo(commentPage);
-    }
-
-    @Test
-    void givenPostComment_whenFindById_thenFound() {
-        //given
-        UUID commentId = comment.getId();
-        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
-
-        //when
-        Optional<PostComment> foundComment = postCommentService.findById(commentId);
+        UUID commentId = this.postCommentService.createComment(postId, userId, comment);
+        Optional<PostComment> foundComment = this.postCommentService.findById(commentId);
 
         //then
         assertThat(foundComment).isPresent();
-        assertThat(foundComment.get()).isEqualTo(comment);
+        assertThat(foundComment.get().getId()).isEqualTo(commentId);
+        assertThat(foundComment.get().getUserId()).isEqualTo(userId);
+        assertThat(foundComment.get().getContent()).isEqualTo(comment);
+        assertThat(foundComment.get().getCreatedDate()).isBefore(Instant.now());
     }
 
     @Test
-    void givenComment_whenRemoveComment_thenRemoved() {
+    void givenNoPost_whenCreateComment_thenException() {
         //given
-        UUID commentId = comment.getId();
+        UUID postId = UUID.randomUUID();
+        String userId = UUID.randomUUID().toString();
+        String comment = RandomStringUtils.random(16);
 
         //when
-        postCommentService.removeComment(postId, commentId);
+        assertThatThrownBy(() -> this.postCommentService.createComment(postId, userId, comment))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @Sql(scripts = {"/db_scripts/insert_posts.sql", "/db_scripts/insert_comments.sql"})
+    void givenComments_whenDeleteComment_thenDeleted() {
+        //given
+        UUID postId = UUID.fromString("32ccebc5-22c8-4d39-9044-aee9ec4e30f3");
+        UUID commentId = UUID.fromString("4fecb4ee-7d00-43fa-9672-7cca75091fb7");
+        assertThat(this.postCommentService.findById(commentId)).isPresent();
+
+        //when
+        this.postCommentService.removeComment(postId, commentId);
 
         //then
-        verify(commentRepository).deleteById(commentId);
+        assertThat(this.postCommentService.findById(commentId)).isEmpty();
+    }
+
+    @Test
+    void givenNoComments_whenDeleteComment_thenException() {
+        //given
+        UUID postId = UUID.randomUUID();
+        UUID commentId = UUID.randomUUID();
+
+        //when
+        assertThatThrownBy(() -> this.postCommentService.removeComment(postId, commentId))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @Sql(scripts = {"/db_scripts/insert_posts.sql", "/db_scripts/insert_comments.sql"})
+    void givenComments_whenFindByPostId_thenFound() {
+        //given
+        UUID postId = UUID.fromString("32ccebc5-22c8-4d39-9044-aee9ec4e30f3");
+
+        //when
+        PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "createdDate"));
+        Page<PostComment> commentPage = this.postCommentService.findAllByPostId(postId, pageRequest);
+
+        //then
+        assertThat(commentPage.getTotalElements()).isEqualTo(2L);
+        assertThat(commentPage.getContent().get(0).getContent()).isEqualTo("Second comment");
+        assertThat(commentPage.getContent().get(1).getContent()).isEqualTo("First comment");
     }
 }

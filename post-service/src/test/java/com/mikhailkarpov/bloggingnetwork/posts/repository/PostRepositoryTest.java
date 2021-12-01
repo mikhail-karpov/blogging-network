@@ -1,23 +1,30 @@
 package com.mikhailkarpov.bloggingnetwork.posts.repository;
 
 import com.mikhailkarpov.bloggingnetwork.posts.config.PersistenceTestConfig;
-import com.mikhailkarpov.bloggingnetwork.posts.domain.PostComment;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
-import com.mikhailkarpov.bloggingnetwork.posts.util.EntityUtils;
+import com.mikhailkarpov.bloggingnetwork.posts.domain.PostProjection;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.EventStatus;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEvent;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEventPublisher;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ContextConfiguration;
-import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -30,69 +37,87 @@ class PostRepositoryTest {
     @Autowired
     private PostRepository postRepository;
 
-    @Test
-    void givenUser_whenSavePostsAndFindByUserId_thenFound() {
-        //given
-        String userId = UUID.randomUUID().toString();
-        for (int i = 0; i < 10; i++) {
-            Post post = new Post(userId, RandomStringUtils.randomAlphabetic(25));
-            entityManager.persist(post);
-        }
-        entityManager.flush();
+    @MockBean
+    private PostEventPublisher eventPublisher;
 
-        //when
-        Page<Post> posts = postRepository.findByUserId(userId, PageRequest.of(2, 4));
-
-        //then
-        assertThat(posts.getTotalElements()).isEqualTo(10L);
-        assertThat(posts.getSize()).isEqualTo(4);
-        assertThat(posts.getNumber()).isEqualTo(2);
-        assertThat(posts.getContent()).isNotNull();
-        assertThat(posts.getContent().size()).isEqualTo(2);
-    }
+    @Captor
+    private ArgumentCaptor<PostEvent> eventArgumentCaptor;
 
     @Test
-    void givenPostWithComments_whenFindWithComments_thenFound() {
+    void whenSavePost_thenPostIsSavedAndEventIsPublished() {
         //given
-        Post post = createRandomPostWithComments(10);
-        UUID postId = entityManager.persistAndGetId(post, UUID.class);
-        entityManager.flush();
+        Post post = new Post("user", "post content");
 
         //when
-        Optional<Post> foundPost = postRepository.findByIdWithComments(postId);
+        Post savedPost = this.postRepository.save(post);
+        this.entityManager.flush();
+        Optional<Post> foundPost = this.postRepository.findById(post.getId());
 
         //then
+        assertThat(savedPost.getId()).isEqualTo(post.getId());
+        assertThat(savedPost.getUserId()).isEqualTo("user");
+        assertThat(savedPost.getContent()).isEqualTo("post content");
+        assertThat(savedPost.getCreatedDate()).isNotNull();
+
         assertThat(foundPost).isPresent();
-        assertThat(foundPost.get().getPostComments().size()).isEqualTo(10);
+        assertThat(foundPost.get()).isEqualTo(savedPost);
+
+        verify(this.eventPublisher).publish(this.eventArgumentCaptor.capture());
+
+        PostEvent event = this.eventArgumentCaptor.getValue();
+        assertThat(event.getAuthorId()).isEqualTo("user");
+        assertThat(event.getPostId()).isEqualTo(post.getId().toString());
+        assertThat(event.getStatus()).isEqualTo(EventStatus.CREATED);
     }
 
     @Test
-    void givenPostAndComments_whenFindCommentsByPostId_thenFound() {
+    @Sql(scripts = "/db_scripts/insert_posts.sql")
+    void whenDeletePost_thenPostIsRemovedAndEventIsPublished() {
         //given
-        Post post = createRandomPostWithComments(10);
-        UUID postId = entityManager.persistAndGetId(post, UUID.class);
-        entityManager.flush();
+        UUID postId = UUID.fromString("e7365159-8d52-4adb-9355-9787a63d945d");
 
         //when
-        PageRequest pageRequest = PageRequest.of(2, 4);
-        Page<PostComment> comments = postRepository.findCommentsByPostId(postId, pageRequest);
+        this.postRepository.deleteById(postId);
+        this.entityManager.flush();
 
         //then
-        assertThat(comments).isNotNull();
-        assertThat(comments.getTotalElements()).isEqualTo(10L);
-        assertThat(comments.getTotalPages()).isEqualTo(3);
-        assertThat(comments.getNumber()).isEqualTo(2);
-        assertThat(comments.getContent().size()).isEqualTo(2);
+        assertThat(this.postRepository.existsById(postId)).isFalse();
+        verify(this.eventPublisher).publish(this.eventArgumentCaptor.capture());
+
+        PostEvent event = this.eventArgumentCaptor.getValue();
+        assertThat(event.getAuthorId()).isEqualTo("user-2");
+        assertThat(event.getPostId()).isEqualTo(postId.toString());
+        assertThat(event.getStatus()).isEqualTo(EventStatus.DELETED);
     }
 
-    private Post createRandomPostWithComments(int commentsCount) {
-        assertThat(commentsCount).isGreaterThan(0);
+    @Test
+    @Sql(scripts = "/db_scripts/insert_posts.sql")
+    void givenPost_whenFindPostProjectionById_thenFound() {
+        //given
+        UUID postId = UUID.fromString("32ccebc5-22c8-4d39-9044-aee9ec4e30f3");
 
-        Post post = EntityUtils.createRandomPost(25);
-        for (int i = 0; i < commentsCount; i++) {
-            PostComment postComment = EntityUtils.createRandomPostComment(15);
-            post.addComment(postComment);
-        }
-        return post;
+        //when
+        Optional<PostProjection> post = this.postRepository.findPostById(postId);
+
+        //then
+        assertThat(post).isPresent();
+        assertThat(post.get().getId()).isEqualTo(postId);
+        assertThat(post.get().getUserId()).isEqualTo("user-1");
+        assertThat(post.get().getContent()).isEqualTo("Hello world!");
+    }
+
+    @Test
+    @Sql(scripts = "/db_scripts/insert_posts.sql")
+    void givenPosts_whenFindPostProjectionByUserId_thenFound() {
+        //when
+        PageRequest pageRequest = PageRequest.of(0, 4, Sort.by(Sort.Direction.DESC, "createdDate"));
+        Page<PostProjection> posts = this.postRepository.findPostsByUserId("user-1", pageRequest);
+
+        //then
+        assertThat(posts.getTotalPages()).isEqualTo(1);
+        assertThat(posts.getTotalElements()).isEqualTo(2L);
+        assertThat(posts.getNumberOfElements()).isEqualTo(2);
+        assertThat(posts.getContent().get(0).getId()).isEqualTo(UUID.fromString("a41d09c1-7aef-4328-8fc4-141092133f88"));
+        assertThat(posts.getContent().get(1).getId()).isEqualTo(UUID.fromString("32ccebc5-22c8-4d39-9044-aee9ec4e30f3"));
     }
 }

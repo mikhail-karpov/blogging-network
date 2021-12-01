@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @TestConfiguration
-public class TestSecurityConfig {
+public class SecurityTestConfig {
 
     public static final String TOKEN = "token";
     public static final String SUBJECT = UUID.randomUUID().toString();

@@ -4,13 +4,13 @@ import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.PostComment;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostCommentRepository;
+import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManager;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,38 +18,43 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PostCommentServiceImpl implements PostCommentService {
 
-    private final PostService postService;
+    private final PostRepository postRepository;
     private final PostCommentRepository commentRepository;
 
     @Override
     @Transactional
-    public PostComment addComment(UUID postId, PostComment postComment) {
+    public UUID createComment(UUID postId, String userId, String comment) {
 
-        Post post = postService.findById(postId, true).orElseThrow(() -> {
+        Post post = this.postRepository.findById(postId).orElseThrow(() -> {
             String message = String.format("Post with id='%s' not found", postId);
             return new ResourceNotFoundException(message);
         });
 
-        post.addComment(postComment);
-        postService.save(post);
-        return postComment;
+        PostComment savedComment = this.commentRepository.save(new PostComment(post, userId, comment));
+        return savedComment.getId();
     }
 
     @Override
     public Page<PostComment> findAllByPostId(UUID postId, Pageable pageable) {
 
-        return commentRepository.findAllByPostId(postId, pageable);
+        return this.commentRepository.findAllByPostId(postId, pageable);
     }
 
     @Override
     public Optional<PostComment> findById(UUID commentId) {
 
-        return commentRepository.findById(commentId);
+        return this.commentRepository.findById(commentId);
     }
 
     @Override
+    @Transactional
     public void removeComment(UUID postId, UUID commentId) {
 
-        commentRepository.deleteById(commentId);
+        if (!this.commentRepository.existsById(commentId)) {
+            String message = String.format("Post comment with id=%s not found", commentId);
+            throw new ResourceNotFoundException(message);
+        }
+
+        this.commentRepository.deleteById(commentId);
     }
 }

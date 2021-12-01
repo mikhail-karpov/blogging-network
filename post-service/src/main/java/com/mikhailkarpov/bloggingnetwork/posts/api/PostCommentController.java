@@ -22,7 +22,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.validation.Valid;
 import java.net.URI;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -39,10 +38,9 @@ public class PostCommentController {
                                                       @AuthenticationPrincipal Jwt jwt) {
 
         String userId = jwt.getSubject();
-        String content = request.getComment();
-        PostComment postComment = postCommentService.addComment(postId, new PostComment(userId, content));
+        UUID commentId = postCommentService.createComment(postId, userId, request.getComment());
 
-        URI location = uriComponentsBuilder.path("/posts/{postId}/comments/{commentId}").build(postId, postComment.getId());
+        URI location = uriComponentsBuilder.path("/posts/{postId}/comments/{commentId}").build(commentId);
         return ResponseEntity.created(location).build();
     }
 

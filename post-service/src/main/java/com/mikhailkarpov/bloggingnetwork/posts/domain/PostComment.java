@@ -23,7 +23,13 @@ public class PostComment extends BaseEntity {
         this.post = null;
     }
 
-    void setPost(Post post) {
+    public PostComment(Post post, String userId, String content) {
+        super(userId);
+        this.content = content;
+        setPost(post);
+    }
+
+    public void setPost(Post post) {
         this.post = post;
     }
 
