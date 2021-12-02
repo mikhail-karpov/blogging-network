@@ -1,134 +1,145 @@
 package com.mikhailkarpov.bloggingnetwork.posts.service;
 
-import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
-import com.mikhailkarpov.bloggingnetwork.posts.domain.PostProjection;
+import com.mikhailkarpov.bloggingnetwork.posts.config.PersistenceTestConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PostDto;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.PostProjectionTestImpl;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.EventStatus;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEvent;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEventPublisher;
+import com.mikhailkarpov.bloggingnetwork.posts.repository.CommentRepository;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.jdbc.Sql;
+import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(SpringExtension.class)
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ContextConfiguration(classes = PersistenceTestConfig.class)
 class PostServiceImplTest {
 
-    @Mock
+    @Autowired
     private PostRepository postRepository;
 
-    @Mock
+    @Autowired
+    private CommentRepository commentRepository;
+
+    @MockBean
     private UserService userService;
 
-    @InjectMocks
-    private PostServiceImpl postService;
+    @MockBean
+    private PostEventPublisher eventPublisher;
 
     @Captor
-    private ArgumentCaptor<Post> postArgumentCaptor;
+    ArgumentCaptor<PostEvent> eventArgumentCaptor;
 
-    private final PostProjection post = PostProjectionTestImpl.builder()
-            .id(UUID.randomUUID())
-            .userId("userId")
-            .content("Post content")
-            .createdDate(Instant.now())
-            .build();
+    private PostServiceImpl postService;
 
-    private final UserProfileDto user = new UserProfileDto("userId", "userName");
+    @BeforeEach
+    void setUp() {
+        this.postService = new PostServiceImpl(this.postRepository, this.userService);
+    }
 
     @Test
-    void givenPost_whenDeleteById_thenDelete() {
+    void whenCreatePost_thenEventIsPublishedAndPostFound() {
         //given
-        when(this.postRepository.existsById(any())).thenReturn(true);
+        String userId = UUID.randomUUID().toString();
+        String postContent = RandomStringUtils.randomAlphabetic(35);
+
+        UserProfileDto user = new UserProfileDto(userId, "user-name");
+        when(this.userService.getUserById(userId)).thenReturn(user);
 
         //when
-        UUID postId = UUID.randomUUID();
+        UUID postId = this.postService.createPost(userId, postContent);
+        Optional<PostDto> foundPost = this.postService.findById(postId);
+
+        //then
+        assertThat(foundPost).isPresent();
+
+        PostDto postDto = foundPost.get();
+        assertThat(postDto.getId()).isEqualTo(postId.toString());
+        assertThat(postDto.getContent()).isEqualTo(postContent);
+        assertThat(postDto.getCreatedDate()).isBefore(Instant.now());
+        assertThat(postDto.getUser()).isEqualTo(user);
+
+        verify(this.eventPublisher).publish(this.eventArgumentCaptor.capture());
+
+        PostEvent event = this.eventArgumentCaptor.getValue();
+        assertThat(event.getAuthorId()).isEqualTo(userId);
+        assertThat(event.getPostId()).isEqualTo(postId.toString());
+        assertThat(event.getStatus()).isEqualTo(EventStatus.CREATED);
+    }
+
+    @Test
+    @Sql(scripts = {"/db_scripts/insert_posts.sql", "/db_scripts/insert_comments.sql"})
+    void givenPosts_whenDeleteById_thenDeletedAndEventPublished() {
+        //given
+        UUID postId = UUID.fromString("32ccebc5-22c8-4d39-9044-aee9ec4e30f3");
+        assertThat(this.postService.findById(postId)).isPresent();
+
+        //when
         this.postService.deleteById(postId);
 
         //then
-        verify(this.postRepository).deleteById(postId);
+        assertThat(this.postService.findById(postId)).isEmpty();
+        verify(this.eventPublisher).publish(this.eventArgumentCaptor.capture());
+
+        PostEvent event = this.eventArgumentCaptor.getValue();
+        assertThat(event.getAuthorId()).isEqualTo("user-1");
+        assertThat(event.getPostId()).isEqualTo(postId.toString());
+        assertThat(event.getStatus()).isEqualTo(EventStatus.DELETED);
+
+        PageRequest pageRequest = PageRequest.of(0, 3);
+        assertThat(this.commentRepository.findAllByPostId(postId, pageRequest).getTotalElements()).isEqualTo(0L);
     }
 
     @Test
-    void givenNoPost_whenDeleteById_thenThrows() {
+    void givenNoPost_whenDeleteById_thenException() {
         //given
-        when(postRepository.existsById(any())).thenReturn(false);
-
-        //when
-        UUID id = UUID.randomUUID();
-        assertThrows(ResourceNotFoundException.class, () -> postService.deleteById(id));
+        UUID postId = UUID.randomUUID();
 
         //then
-        verify(this.postRepository).existsById(id);
-        verifyNoMoreInteractions(this.postRepository);
+        assertThatThrownBy(() -> this.postService.deleteById(postId)).isInstanceOf(ResourceNotFoundException.class);
+        verifyNoInteractions(this.eventPublisher);
     }
 
     @Test
-    void test_findAllByUserId() {
+    @Sql(scripts = "/db_scripts/insert_posts.sql")
+    void givenPosts_whenFindByUserId_thenFound() {
         //given
-        PageRequest pageRequest = PageRequest.of(1, 3);
-        Page<PostProjection> postPage = new PageImpl<>(Arrays.asList(this.post), pageRequest, 4L);
-
-        when(this.postRepository.findPostsByUserId("userId", pageRequest)).thenReturn(postPage);
-        when(this.userService.getUserById("userId")).thenReturn(user);
+        String userId = "user-1";
+        UserProfileDto user = new UserProfileDto(userId, "user-name");
+        when(this.userService.getUserById(userId)).thenReturn(user);
 
         //when
-        Page<PostDto> foundPage = postService.findAllByUserId("userId", pageRequest);
+        PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "content"));
+        Page<PostDto> postPage = this.postService.findAllByUserId(userId, pageRequest);
 
         //then
-        assertThat(foundPage.getTotalElements()).isEqualTo(4L);
-        assertThat(foundPage.getNumberOfElements()).isEqualTo(1);
-
-        PostDto postDto = foundPage.getContent().get(0);
-        assertThat(postDto.getId()).isEqualTo(post.getId().toString());
-        assertThat(postDto.getContent()).isEqualTo("Post content");
-        assertThat(postDto.getCreatedDate()).isEqualTo(post.getCreatedDate());
-        assertThat(postDto.getUser()).isEqualTo(user);
-    }
-
-    @Test
-    void test_findById() {
-        //given
-        UUID postId = this.post.getId();
-        when(this.postRepository.findPostById(postId)).thenReturn(Optional.of(this.post));
-        when(this.userService.getUserById(this.post.getUserId())).thenReturn(this.user);
-
-        //when
-        Optional<PostDto> found = postService.findById(postId);
-
-        //then
-        assertThat(found).isPresent();
-        assertThat(found.get()).hasNoNullFieldsOrProperties();
-    }
-
-    @Test
-    void test_save() {
-        //given
-        Post post = new Post("userId", "Post content");
-        when(postRepository.save(any())).thenReturn(post);
-
-        //when
-        UUID postId = this.postService.createPost("userId", "Post content");
-
-        //then
-        assertThat(postId).isEqualTo(post.getId());
-        verify(this.postRepository).save(this.postArgumentCaptor.capture());
-        assertThat(this.postArgumentCaptor.getValue().getUserId()).isEqualTo("userId");
-        assertThat(this.postArgumentCaptor.getValue().getContent()).isEqualTo("Post content");
+        assertThat(postPage.getTotalElements()).isEqualTo(2L);
+        assertThat(postPage.getNumberOfElements()).isEqualTo(2);
+        assertThat(postPage.getContent().get(0).getContent()).isEqualTo("Second post by user-1");
+        assertThat(postPage.getContent().get(0).getUser()).isEqualTo(user);
+        assertThat(postPage.getContent().get(1).getContent()).isEqualTo("Hello world!");
+        assertThat(postPage.getContent().get(1).getUser()).isEqualTo(user);
     }
 }

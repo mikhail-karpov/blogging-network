@@ -1,9 +1,9 @@
 package com.mikhailkarpov.bloggingnetwork.posts.service;
 
 import com.mikhailkarpov.bloggingnetwork.posts.config.PersistenceTestConfig;
-import com.mikhailkarpov.bloggingnetwork.posts.domain.PostComment;
+import com.mikhailkarpov.bloggingnetwork.posts.domain.Comment;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
-import com.mikhailkarpov.bloggingnetwork.posts.repository.PostCommentRepository;
+import com.mikhailkarpov.bloggingnetwork.posts.repository.CommentRepository;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,19 +27,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = PersistenceTestConfig.class)
-public class PostCommentServiceImplTest {
+public class CommentServiceImplTest {
 
     @Autowired
-    PostCommentRepository commentRepository;
+    CommentRepository commentRepository;
 
     @Autowired
     PostRepository postRepository;
 
-    PostCommentServiceImpl postCommentService;
+    CommentServiceImpl postCommentService;
 
     @BeforeEach
     void setUp() {
-        this.postCommentService = new PostCommentServiceImpl(postRepository, commentRepository);
+        this.postCommentService = new CommentServiceImpl(postRepository, commentRepository);
     }
 
     @Test
@@ -52,13 +52,13 @@ public class PostCommentServiceImplTest {
 
         //when
         UUID commentId = this.postCommentService.createComment(postId, userId, comment);
-        Optional<PostComment> foundComment = this.postCommentService.findById(commentId);
+        Optional<Comment> foundComment = this.postCommentService.findById(commentId);
 
         //then
         assertThat(foundComment).isPresent();
         assertThat(foundComment.get().getId()).isEqualTo(commentId);
         assertThat(foundComment.get().getUserId()).isEqualTo(userId);
-        assertThat(foundComment.get().getContent()).isEqualTo(comment);
+        assertThat(foundComment.get().getComment()).isEqualTo(comment);
         assertThat(foundComment.get().getCreatedDate()).isBefore(Instant.now());
     }
 
@@ -108,11 +108,11 @@ public class PostCommentServiceImplTest {
 
         //when
         PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "createdDate"));
-        Page<PostComment> commentPage = this.postCommentService.findAllByPostId(postId, pageRequest);
+        Page<Comment> commentPage = this.postCommentService.findAllByPostId(postId, pageRequest);
 
         //then
         assertThat(commentPage.getTotalElements()).isEqualTo(2L);
-        assertThat(commentPage.getContent().get(0).getContent()).isEqualTo("Second comment");
-        assertThat(commentPage.getContent().get(1).getContent()).isEqualTo("First comment");
+        assertThat(commentPage.getContent().get(0).getComment()).isEqualTo("Second comment");
+        assertThat(commentPage.getContent().get(1).getComment()).isEqualTo("First comment");
     }
 }

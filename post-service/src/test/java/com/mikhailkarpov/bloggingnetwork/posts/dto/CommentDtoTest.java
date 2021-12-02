@@ -13,10 +13,10 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @JsonTest
-class PostCommentDtoTest {
+class CommentDtoTest {
 
     @Autowired
-    private JacksonTester<PostCommentDto> jacksonTester;
+    private JacksonTester<CommentDto> jacksonTester;
 
     @Test
     void testSerialize() throws IOException {
@@ -25,10 +25,10 @@ class PostCommentDtoTest {
         String userId = UUID.randomUUID().toString();
 
         UserProfileDto user = new UserProfileDto(userId, "username");
-        PostCommentDto dto = new PostCommentDto(id, user, "Post comment", Instant.parse("2020-02-15T01:45:33.00Z"));
+        CommentDto dto = new CommentDto(id, user, "Post comment", Instant.parse("2020-02-15T01:45:33.00Z"));
 
         //when
-        JsonContent<PostCommentDto> json = jacksonTester.write(dto);
+        JsonContent<CommentDto> json = jacksonTester.write(dto);
 
         //then
         assertThat(json).extractingJsonPathStringValue("$.id").isEqualTo(id);
@@ -49,7 +49,7 @@ class PostCommentDtoTest {
                 "}";
 
         //when
-        PostCommentDto dto = jacksonTester.parse(json).getObject();
+        CommentDto dto = jacksonTester.parse(json).getObject();
 
         //then
         assertThat(dto.getId()).isEqualTo("commentId");

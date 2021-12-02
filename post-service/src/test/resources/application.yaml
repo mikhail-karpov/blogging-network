@@ -49,5 +49,4 @@ feign:
 logging:
   level:
     org.hibernate.stat: DEBUG
-    org.hibernate.SQL: DEBUG
     com.mikhailkarpov.bloggingnetwork.posts.client.UserServiceClient: DEBUG

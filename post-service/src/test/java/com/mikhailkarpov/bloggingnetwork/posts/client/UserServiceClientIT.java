@@ -20,7 +20,6 @@ import java.util.Optional;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = {MockUserServiceConfig.class})
 class UserServiceClientIT extends AbstractIT {

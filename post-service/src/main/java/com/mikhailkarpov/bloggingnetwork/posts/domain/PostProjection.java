@@ -1,15 +1,6 @@
 package com.mikhailkarpov.bloggingnetwork.posts.domain;
 
-import java.time.Instant;
-import java.util.UUID;
-
-public interface PostProjection {
-
-    UUID getId();
-
-    String getUserId();
+public interface PostProjection extends BaseProjection {
 
     String getContent();
-
-    Instant getCreatedDate();
 }

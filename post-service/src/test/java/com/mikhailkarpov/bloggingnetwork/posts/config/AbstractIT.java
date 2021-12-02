@@ -14,7 +14,7 @@ public abstract class AbstractIT {
 
     static final PostgreSQLContainer POSTGRES;
 
-//    static final KeycloakContainer KEYCLOAK;
+    static final KeycloakContainer KEYCLOAK;
 
     static final RabbitMQContainer RABBIT_MQ_CONTAINER;
 
@@ -24,24 +24,24 @@ public abstract class AbstractIT {
                 .withUsername("post_service")
                 .withPassword("password");
 
-//        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
-//                .withRealmImportFile("/test-realm.json");
+        KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
+                .withRealmImportFile("/test-realm.json");
 
         RABBIT_MQ_CONTAINER = new RabbitMQContainer("rabbitmq")
                 .withExposedPorts(5672);
 
         POSTGRES.start();
-//        KEYCLOAK.start();
+        KEYCLOAK.start();
         RABBIT_MQ_CONTAINER.start();
     }
 
-//    @DynamicPropertySource
-//    static void configKeycloak(DynamicPropertyRegistry registry) {
-//        registry.add("app.keycloak.serverUrl", KEYCLOAK::getAuthServerUrl);
-//        registry.add("app.keycloak.realm", () -> "test");
-//        registry.add("app.keycloak.user", KEYCLOAK::getAdminUsername);
-//        registry.add("app.keycloak.password", KEYCLOAK::getAdminPassword);
-//    }
+    @DynamicPropertySource
+    static void configKeycloak(DynamicPropertyRegistry registry) {
+        registry.add("app.keycloak.serverUrl", KEYCLOAK::getAuthServerUrl);
+        registry.add("app.keycloak.realm", () -> "test");
+        registry.add("app.keycloak.user", KEYCLOAK::getAdminUsername);
+        registry.add("app.keycloak.password", KEYCLOAK::getAdminPassword);
+    }
 
     @DynamicPropertySource
     static void configRabbitMQ(DynamicPropertyRegistry registry) {
@@ -70,7 +70,7 @@ public abstract class AbstractIT {
 
     @AfterEach
     void purgeQueue() {
-        this.rabbitAdmin.purgeQueue(RabbitMQConfig.POST_EVENT_QUEUE, false);
+        this.rabbitAdmin.purgeQueue(RabbitMQConfig.POST_EVENT_QUEUE, true);
     }
 }
 

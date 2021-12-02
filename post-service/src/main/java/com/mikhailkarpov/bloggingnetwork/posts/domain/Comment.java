@@ -8,24 +8,24 @@ import javax.persistence.*;
 @Entity
 @Table(name = "post_comment")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class PostComment extends BaseEntity {
+public class Comment extends BaseEntity {
 
-    @Column(name = "content", nullable = false)
-    private String content;
+    @Column(name = "comment", nullable = false)
+    private String comment;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "post_fk")
     private Post post;
 
-    public PostComment(String userId, String content) {
+    public Comment(String userId, String comment) {
         super(userId);
-        this.content = content;
+        this.comment = comment;
         this.post = null;
     }
 
-    public PostComment(Post post, String userId, String content) {
+    public Comment(Post post, String userId, String comment) {
         super(userId);
-        this.content = content;
+        this.comment = comment;
         setPost(post);
     }
 
@@ -33,12 +33,12 @@ public class PostComment extends BaseEntity {
         this.post = post;
     }
 
-    public String getContent() {
-        return content;
+    public String getComment() {
+        return comment;
     }
 
-    public void setContent(String content) {
-        this.content = content;
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 
     @Override
@@ -46,7 +46,7 @@ public class PostComment extends BaseEntity {
         return "Comment{" +
                 "id='" + getId() + '\'' +
                 ", userId='" + getUserId() + '\'' +
-                ", content='" + content + '\'' +
+                ", content='" + comment + '\'' +
                 ", post=" + post +
                 ", createdDate=" + getCreatedDate() +
                 '}';

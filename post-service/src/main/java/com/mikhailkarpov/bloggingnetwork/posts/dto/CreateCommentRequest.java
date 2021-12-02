@@ -7,13 +7,13 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
 @Value
-public class CreatePostCommentRequest {
+public class CreateCommentRequest {
 
     @NotBlank(message = "Comment must be provided")
     @Size(min = 4, max = 180, message = "Comment must be between 4 and 180 characters long")
     private final String comment;
 
-    public CreatePostCommentRequest(@JsonProperty("comment") String comment) {
+    public CreateCommentRequest(@JsonProperty("comment") String comment) {
         this.comment = comment;
     }
 }

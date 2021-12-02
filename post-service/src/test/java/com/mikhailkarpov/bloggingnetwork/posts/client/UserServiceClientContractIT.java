@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.stubrunner.spring.AutoConfigureStubRunner;
 import org.springframework.cloud.contract.stubrunner.spring.StubRunnerProperties;
+import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClient;
+import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClients;
 import org.springframework.test.context.TestPropertySource;
 
 import java.util.Optional;
@@ -18,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         ids = "com.mikhailkarpov:user-service:+:stubs",
         stubsMode = StubRunnerProperties.StubsMode.LOCAL
 )
+@LoadBalancerClient
 @TestPropertySource(properties = "feign.circuitbreaker.enabled=false")
 class UserServiceClientContractIT extends AbstractIT {
 

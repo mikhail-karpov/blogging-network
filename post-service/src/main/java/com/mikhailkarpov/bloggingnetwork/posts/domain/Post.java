@@ -4,7 +4,9 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 import static javax.persistence.CascadeType.ALL;
 import static javax.persistence.FetchType.LAZY;
@@ -19,7 +21,7 @@ public class Post extends BaseEntity {
     private String content;
 
     @OneToMany(fetch = LAZY, mappedBy = "post", cascade = {ALL}, orphanRemoval = true)
-    private Set<PostComment> postComments = new HashSet<>();
+    private final Set<Comment> comments = new HashSet<>();
 
     public Post(String userId, String content) {
         super(userId);
@@ -32,20 +34,6 @@ public class Post extends BaseEntity {
 
     public void setContent(String content) {
         this.content = Objects.requireNonNull(content);
-    }
-
-    public void addComment(PostComment postComment) {
-        this.postComments.add(postComment);
-        postComment.setPost(this);
-    }
-
-    public void removeComment(PostComment postComment) {
-        this.postComments.remove(postComment);
-        postComment.setPost(null);
-    }
-
-    public List<PostComment> getPostComments() {
-        return Collections.unmodifiableList(new ArrayList<>(postComments));
     }
 
     @Override

@@ -11,18 +11,18 @@ import java.io.IOException;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @JsonTest
-class CreatePostCommentRequestTest {
+class CreateCommentRequestTest {
 
     @Autowired
-    private JacksonTester<CreatePostCommentRequest> jacksonTester;
+    private JacksonTester<CreateCommentRequest> jacksonTester;
 
     @Test
     void testSerialize() throws IOException {
         //given
-        CreatePostCommentRequest request = new CreatePostCommentRequest("Post comment");
+        CreateCommentRequest request = new CreateCommentRequest("Post comment");
 
         //when
-        JsonContent<CreatePostCommentRequest> json = jacksonTester.write(request);
+        JsonContent<CreateCommentRequest> json = jacksonTester.write(request);
 
         //then
         assertThat(json).extractingJsonPathStringValue("$.comment").isEqualTo("Post comment");
@@ -34,7 +34,7 @@ class CreatePostCommentRequestTest {
         String json = "{\"comment\": \"Post comment\"}";
 
         //when
-        CreatePostCommentRequest request = jacksonTester.parse(json).getObject();
+        CreateCommentRequest request = jacksonTester.parse(json).getObject();
 
         //then
         assertThat(request.getComment()).isEqualTo("Post comment");

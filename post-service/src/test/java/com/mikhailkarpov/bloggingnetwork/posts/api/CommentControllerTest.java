@@ -2,10 +2,10 @@ package com.mikhailkarpov.bloggingnetwork.posts.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mikhailkarpov.bloggingnetwork.posts.config.SecurityTestConfig;
-import com.mikhailkarpov.bloggingnetwork.posts.domain.PostComment;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.CreatePostCommentRequest;
+import com.mikhailkarpov.bloggingnetwork.posts.domain.Comment;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.CreateCommentRequest;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
-import com.mikhailkarpov.bloggingnetwork.posts.service.PostCommentService;
+import com.mikhailkarpov.bloggingnetwork.posts.service.CommentService;
 import com.mikhailkarpov.bloggingnetwork.posts.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,9 +38,9 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = PostCommentController.class)
+@WebMvcTest(controllers = CommentController.class)
 @ContextConfiguration(classes = SecurityTestConfig.class)
-class PostCommentControllerTest {
+class CommentControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -49,23 +49,23 @@ class PostCommentControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private PostCommentService postCommentService;
+    private CommentService commentService;
 
     @MockBean
     private UserService userService;
 
     @Captor
-    private ArgumentCaptor<PostComment> commentArgumentCaptor;
+    private ArgumentCaptor<Comment> commentArgumentCaptor;
 
     @Test
     void givenRequest_whenPostComment_thenCreated() throws Exception {
         //given
         String userId = "user-id";
         UUID postId = UUID.randomUUID();
-        PostComment postComment = new PostComment(userId, "post comment");
-        String expectedLocation = "http://localhost/posts/" + postId + "/comments/" + postComment.getId();
+        Comment comment = new Comment(userId, "post comment");
+        String expectedLocation = "http://localhost/posts/" + postId + "/comments/" + comment.getId();
 
-        when(postCommentService.createComment(postId, userId, "post comment")).thenReturn(postComment.getId());
+        when(commentService.createComment(postId, userId, "post comment")).thenReturn(comment.getId());
 
         //when
         mockMvc.perform(post("/posts/{id}/comments", postId)
@@ -76,13 +76,13 @@ class PostCommentControllerTest {
                 .andExpect(header().string("Location", expectedLocation));
 
         //then
-        verify(postCommentService).createComment(postId, userId, "post comment");
+        verify(commentService).createComment(postId, userId, "post comment");
     }
 
     @ParameterizedTest
     @NullSource
     @MethodSource("getInvalidCommentRequest")
-    void givenInvalidRequest_whenPostComment_thenBadRequest(CreatePostCommentRequest request) throws Exception {
+    void givenInvalidRequest_whenPostComment_thenBadRequest(CreateCommentRequest request) throws Exception {
         //given
         UUID postId = UUID.randomUUID();
 
@@ -96,10 +96,10 @@ class PostCommentControllerTest {
 
     private static Stream<Arguments> getInvalidCommentRequest() {
         return Stream.of(
-                Arguments.of(new CreatePostCommentRequest(null)),
-                Arguments.of(new CreatePostCommentRequest("")),
-                Arguments.of(new CreatePostCommentRequest(RandomStringUtils.randomAlphabetic(3))),
-                Arguments.of(new CreatePostCommentRequest(RandomStringUtils.randomAlphabetic(181)))
+                Arguments.of(new CreateCommentRequest(null)),
+                Arguments.of(new CreateCommentRequest("")),
+                Arguments.of(new CreateCommentRequest(RandomStringUtils.randomAlphabetic(3))),
+                Arguments.of(new CreateCommentRequest(RandomStringUtils.randomAlphabetic(181)))
         );
     }
 
@@ -108,14 +108,14 @@ class PostCommentControllerTest {
         //given
         UUID postId = UUID.randomUUID();
         PageRequest pageRequest = PageRequest.of(1, 2);
-        List<PostComment> comments = Arrays.asList(
-                new PostComment("user1", "comment1"),
-                new PostComment("user2", "comment2")
+        List<Comment> comments = Arrays.asList(
+                new Comment("user1", "comment1"),
+                new Comment("user2", "comment2")
         );
-        Page<PostComment> postCommentPage =
+        Page<Comment> postCommentPage =
                 new PageImpl<>(comments, pageRequest, 10L);
 
-        when(postCommentService.findAllByPostId(postId, pageRequest)).thenReturn(postCommentPage);
+        when(commentService.findAllByPostId(postId, pageRequest)).thenReturn(postCommentPage);
         when(userService.getUserById("user1")).thenReturn(new UserProfileDto("user1", "username1"));
         when(userService.getUserById("user2")).thenReturn(new UserProfileDto("user2", "username2"));
 
@@ -138,7 +138,7 @@ class PostCommentControllerTest {
                 .andExpect(jsonPath("$.result[1].user.username").value("username2"));
 
         //then
-        verify(postCommentService).findAllByPostId(postId, pageRequest);
+        verify(commentService).findAllByPostId(postId, pageRequest);
         verify(userService).getUserById("user1");
         verify(userService).getUserById("user2");
     }
@@ -146,10 +146,10 @@ class PostCommentControllerTest {
     @Test
     void givenComment_whenGetCommentById_thenOk() throws Exception {
         //given
-        PostComment comment = new PostComment("user1", "comment");
+        Comment comment = new Comment("user1", "comment");
         UserProfileDto user = new UserProfileDto("user1", "username");
 
-        when(postCommentService.findById(comment.getId())).thenReturn(Optional.of(comment));
+        when(commentService.findById(comment.getId())).thenReturn(Optional.of(comment));
         when(userService.getUserById(user.getUserId())).thenReturn(user);
 
         //when
@@ -157,19 +157,19 @@ class PostCommentControllerTest {
                         .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(comment.getId().toString()))
-                .andExpect(jsonPath("$.comment").value(comment.getContent()))
+                .andExpect(jsonPath("$.comment").value(comment.getComment()))
                 .andExpect(jsonPath("$.user.userId").value("user1"))
                 .andExpect(jsonPath("$.user.username").value("username"));
 
         //then
-        verify(postCommentService).findById(comment.getId());
+        verify(commentService).findById(comment.getId());
     }
 
     @Test
     void givenNoComment_whenGetCommentById_thenNotFound() throws Exception {
         //given
         UUID commentId = UUID.randomUUID();
-        when(postCommentService.findById(commentId)).thenReturn(Optional.empty());
+        when(commentService.findById(commentId)).thenReturn(Optional.empty());
 
         //when
         mockMvc.perform(get("/posts/{postId}/comments/{commentId}", UUID.randomUUID(), commentId)
@@ -177,14 +177,14 @@ class PostCommentControllerTest {
                 .andExpect(status().isNotFound());
 
         //then
-        verify(postCommentService).findById(commentId);
+        verify(commentService).findById(commentId);
     }
 
     @Test
     void givenComment_whenDelete_thenNoContent() throws Exception {
         //given
-        PostComment comment = new PostComment("user-id", "comment");
-        when(postCommentService.findById(comment.getId())).thenReturn(Optional.of(comment));
+        Comment comment = new Comment("user-id", "comment");
+        when(commentService.findById(comment.getId())).thenReturn(Optional.of(comment));
 
         //when
         UUID postId = UUID.randomUUID();
@@ -193,15 +193,15 @@ class PostCommentControllerTest {
                 .andExpect(status().isNoContent());
 
         //then
-        verify(postCommentService).findById(comment.getId());
-        verify(postCommentService).removeComment(postId, comment.getId());
+        verify(commentService).findById(comment.getId());
+        verify(commentService).removeComment(postId, comment.getId());
     }
 
     @Test
     void givenNoComment_whenDelete_thenNoContent() throws Exception {
         //given
         UUID commentId = UUID.randomUUID();
-        when(postCommentService.findById(commentId)).thenReturn(Optional.empty());
+        when(commentService.findById(commentId)).thenReturn(Optional.empty());
 
         //when
         mockMvc.perform(delete("/posts/{postId}/comments/{commentId}", UUID.randomUUID(), commentId)
@@ -209,7 +209,7 @@ class PostCommentControllerTest {
                 .andExpect(status().isNotFound());
 
         //then
-        verify(postCommentService).findById(commentId);
-        verifyNoMoreInteractions(postCommentService);
+        verify(commentService).findById(commentId);
+        verifyNoMoreInteractions(commentService);
     }
 }
