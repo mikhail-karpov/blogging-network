@@ -2,14 +2,18 @@ package com.mikhailkarpov.bloggingnetwork.posts.service;
 
 import com.mikhailkarpov.bloggingnetwork.posts.config.PersistenceTestConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Comment;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.CommentDto;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.CommentRepository;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -18,11 +22,13 @@ import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -35,11 +41,15 @@ public class CommentServiceImplTest {
     @Autowired
     PostRepository postRepository;
 
-    CommentServiceImpl postCommentService;
+    @MockBean
+    private UserService userService;
+
+    private CommentServiceImpl postCommentService;
 
     @BeforeEach
     void setUp() {
-        this.postCommentService = new CommentServiceImpl(postRepository, commentRepository);
+        this.postCommentService =
+                new CommentServiceImpl(this.postRepository, this.commentRepository, this.userService);
     }
 
     @Test
@@ -50,16 +60,18 @@ public class CommentServiceImplTest {
         String userId = UUID.randomUUID().toString();
         String comment = RandomStringUtils.random(16);
 
+        UserProfileDto user = new UserProfileDto(userId, "user-name");
+        when(this.userService.getUserById(userId)).thenReturn(user);
+
         //when
         UUID commentId = this.postCommentService.createComment(postId, userId, comment);
-        Optional<Comment> foundComment = this.postCommentService.findById(commentId);
+        CommentDto foundComment = this.postCommentService.findById(commentId);
 
         //then
-        assertThat(foundComment).isPresent();
-        assertThat(foundComment.get().getId()).isEqualTo(commentId);
-        assertThat(foundComment.get().getUserId()).isEqualTo(userId);
-        assertThat(foundComment.get().getComment()).isEqualTo(comment);
-        assertThat(foundComment.get().getCreatedDate()).isBefore(Instant.now());
+        assertThat(foundComment.getId()).isEqualTo(commentId.toString());
+        assertThat(foundComment.getUser()).isEqualTo(user);
+        assertThat(foundComment.getComment()).isEqualTo(comment);
+        assertThat(foundComment.getCreatedDate()).isBefore(Instant.now());
     }
 
     @Test
@@ -78,25 +90,20 @@ public class CommentServiceImplTest {
     @Sql(scripts = {"/db_scripts/insert_posts.sql", "/db_scripts/insert_comments.sql"})
     void givenComments_whenDeleteComment_thenDeleted() {
         //given
-        UUID postId = UUID.fromString("32ccebc5-22c8-4d39-9044-aee9ec4e30f3");
         UUID commentId = UUID.fromString("4fecb4ee-7d00-43fa-9672-7cca75091fb7");
-        assertThat(this.postCommentService.findById(commentId)).isPresent();
 
         //when
-        this.postCommentService.removeComment(postId, commentId);
+        this.postCommentService.deleteComment(commentId);
 
         //then
-        assertThat(this.postCommentService.findById(commentId)).isEmpty();
+        assertThatThrownBy(() -> this.postCommentService.findById(commentId))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void givenNoComments_whenDeleteComment_thenException() {
-        //given
-        UUID postId = UUID.randomUUID();
-        UUID commentId = UUID.randomUUID();
 
-        //when
-        assertThatThrownBy(() -> this.postCommentService.removeComment(postId, commentId))
+        assertThatThrownBy(() -> this.postCommentService.deleteComment(UUID.randomUUID()))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -105,10 +112,11 @@ public class CommentServiceImplTest {
     void givenComments_whenFindByPostId_thenFound() {
         //given
         UUID postId = UUID.fromString("32ccebc5-22c8-4d39-9044-aee9ec4e30f3");
+        when(this.userService.getUserById(anyString())).thenReturn(mock(UserProfileDto.class));
 
         //when
         PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "createdDate"));
-        Page<Comment> commentPage = this.postCommentService.findAllByPostId(postId, pageRequest);
+        Page<CommentDto> commentPage = this.postCommentService.findAllByPostId(postId, pageRequest);
 
         //then
         assertThat(commentPage.getTotalElements()).isEqualTo(2L);

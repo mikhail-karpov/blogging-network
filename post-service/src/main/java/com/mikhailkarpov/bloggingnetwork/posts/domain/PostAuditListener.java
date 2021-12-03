@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import javax.persistence.PostPersist;
 import javax.persistence.PostRemove;
+import javax.persistence.PreRemove;
 
 @Component
 @RequiredArgsConstructor

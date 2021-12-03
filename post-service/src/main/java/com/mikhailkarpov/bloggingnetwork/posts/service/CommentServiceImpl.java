@@ -1,7 +1,9 @@
 package com.mikhailkarpov.bloggingnetwork.posts.service;
 
-import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Comment;
+import com.mikhailkarpov.bloggingnetwork.posts.domain.CommentProjection;
+import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.CommentDto;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.CommentRepository;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
@@ -11,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -20,6 +21,7 @@ public class CommentServiceImpl implements CommentService {
 
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
+    private final UserService userService;
 
     @Override
     @Transactional
@@ -35,20 +37,25 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public Page<Comment> findAllByPostId(UUID postId, Pageable pageable) {
+    @Transactional(readOnly = true)
+    public Page<CommentDto> findAllByPostId(UUID postId, Pageable pageable) {
 
-        return this.commentRepository.findAllByPostId(postId, pageable);
+        return this.commentRepository.findAllByPostId(postId, pageable).map(this::mapFromProjection);
     }
 
     @Override
-    public Optional<Comment> findById(UUID commentId) {
+    @Transactional(readOnly = true)
+    public CommentDto findById(UUID commentId) {
 
-        return this.commentRepository.findById(commentId);
+        return this.commentRepository.findCommentById(commentId).map(this::mapFromProjection).orElseThrow(() -> {
+            String message = String.format("Comment with id=%s not found", commentId);
+            return new ResourceNotFoundException(message);
+        });
     }
 
     @Override
     @Transactional
-    public void removeComment(UUID postId, UUID commentId) {
+    public void deleteComment(UUID commentId) {
 
         if (!this.commentRepository.existsById(commentId)) {
             String message = String.format("Post comment with id=%s not found", commentId);
@@ -56,5 +63,14 @@ public class CommentServiceImpl implements CommentService {
         }
 
         this.commentRepository.deleteById(commentId);
+    }
+
+    private CommentDto mapFromProjection(CommentProjection commentProjection) {
+        return CommentDto.builder()
+                .id(commentProjection.getId().toString())
+                .user(this.userService.getUserById(commentProjection.getUserId()))
+                .comment(commentProjection.getComment())
+                .createdDate(commentProjection.getCreatedDate())
+                .build();
     }
 }

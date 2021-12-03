@@ -1,13 +1,10 @@
 package com.mikhailkarpov.bloggingnetwork.posts.api;
 
-import com.mikhailkarpov.bloggingnetwork.posts.domain.Comment;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.CommentDto;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.CreateCommentRequest;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PagedResult;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.CommentDto;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
-import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
 import com.mikhailkarpov.bloggingnetwork.posts.service.CommentService;
-import com.mikhailkarpov.bloggingnetwork.posts.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +18,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
-import java.time.Instant;
 import java.util.UUID;
 
 @RestController
@@ -29,16 +25,15 @@ import java.util.UUID;
 public class CommentController {
 
     private final CommentService commentService;
-    private final UserService userService;
 
     @PostMapping("/posts/{postId}/comments")
-    public ResponseEntity<CommentDto> commentPost(@PathVariable UUID postId,
-                                                  @Valid @RequestBody CreateCommentRequest request,
-                                                  UriComponentsBuilder uriComponentsBuilder,
-                                                  @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<?> commentPost(@PathVariable UUID postId,
+                                         @Valid @RequestBody CreateCommentRequest request,
+                                         UriComponentsBuilder uriComponentsBuilder,
+                                         @AuthenticationPrincipal Jwt jwt) {
 
         String userId = jwt.getSubject();
-        UUID commentId = commentService.createComment(postId, userId, request.getComment());
+        UUID commentId = this.commentService.createComment(postId, userId, request.getComment());
 
         URI location = uriComponentsBuilder.path("/posts/{postId}/comments/{commentId}").build(postId, commentId);
         return ResponseEntity.created(location).build();
@@ -47,17 +42,14 @@ public class CommentController {
     @GetMapping("/posts/{postId}/comments")
     public PagedResult<CommentDto> findCommentsByPostId(@PathVariable UUID postId, Pageable pageable) {
 
-        Page<CommentDto> commentPage = commentService.findAllByPostId(postId, pageable)
-                .map(this::map);
-
+        Page<CommentDto> commentPage = this.commentService.findAllByPostId(postId, pageable);
         return new PagedResult<>(commentPage);
     }
 
     @GetMapping("/posts/{postId}/comments/{commentId}")
     public CommentDto findCommentById(@PathVariable UUID postId, @PathVariable UUID commentId) {
 
-        Comment comment = findCommentOrElseThrow(commentId);
-        return map(comment);
+        return this.commentService.findById(commentId);
     }
 
     @DeleteMapping("/posts/{postId}/comments/{commentId}")
@@ -65,30 +57,12 @@ public class CommentController {
     public void deleteComment(@PathVariable UUID postId, @PathVariable UUID commentId,
                               @AuthenticationPrincipal Jwt jwt) {
 
-        Comment comment = findCommentOrElseThrow(commentId);
-        if (!comment.isOwnedBy(jwt.getSubject())) {
+        UserProfileDto user = this.commentService.findById(commentId).getUser();
+
+        if (user == null || !user.getUserId().equals(jwt.getSubject())) {
             throw new AccessDeniedException("Forbidden to delete comment");
         }
 
-        commentService.removeComment(postId, commentId);
-    }
-
-    private CommentDto map(Comment comment) {
-        String id = comment.getId().toString();
-        String userId = comment.getUserId();
-        String content = comment.getComment();
-        Instant createdDate = comment.getCreatedDate();
-
-        UserProfileDto user = this.userService.getUserById(comment.getUserId());
-
-        return new CommentDto(id, user, content, createdDate);
-    }
-
-    private Comment findCommentOrElseThrow(UUID commentId) {
-
-        return commentService.findById(commentId).orElseThrow(() -> {
-            String message = String.format("Comment with id=%s not found", commentId);
-            return new ResourceNotFoundException(message);
-        });
+        commentService.deleteComment(commentId);
     }
 }
