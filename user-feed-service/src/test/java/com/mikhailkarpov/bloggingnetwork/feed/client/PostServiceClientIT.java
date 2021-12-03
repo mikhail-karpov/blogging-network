@@ -7,10 +7,13 @@ import com.mikhailkarpov.bloggingnetwork.feed.config.AbstractIT;
 import com.mikhailkarpov.bloggingnetwork.feed.config.MockPostServiceConfig;
 import com.mikhailkarpov.bloggingnetwork.feed.dto.Post;
 import com.mikhailkarpov.bloggingnetwork.feed.dto.UserProfile;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.time.LocalDateTime;
@@ -22,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = MockPostServiceConfig.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class PostServiceClientIT extends AbstractIT {
 
     @Autowired
@@ -33,11 +37,20 @@ class PostServiceClientIT extends AbstractIT {
     @Autowired
     private PostServiceClient postServiceClient;
 
+    @Autowired
+    private CircuitBreakerRegistry circuitBreakerRegistry;
+
     @BeforeEach
     void contextLoads() {
         for (WireMockServer service : services) {
             service.resetAll();
         }
+    }
+
+    @Test
+    void circuitBreakerShouldExists() {
+        CircuitBreaker circuitBreaker = this.circuitBreakerRegistry.circuitBreaker("post-service");
+        assertThat(circuitBreaker).isNotNull();
     }
 
     @Test

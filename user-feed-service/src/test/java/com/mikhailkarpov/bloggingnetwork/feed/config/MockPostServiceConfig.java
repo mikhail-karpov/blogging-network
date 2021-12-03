@@ -32,7 +32,7 @@ public class MockPostServiceConfig {
     public ServiceInstanceListSupplier serviceInstanceListSupplier() {
         return new ServiceInstanceListSupplier() {
 
-            private final String serviceId = "user-service";
+            private final String serviceId = "post-service";
 
             @Override
             public String getServiceId() {
