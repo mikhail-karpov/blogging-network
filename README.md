@@ -25,9 +25,9 @@ implemented:
 
 ## To-Do list
 
-- Finish contract tests with Spring Cloud Contract (in progress)
-- Develop a web client
-- Implement direct messaging between users
+- Contract tests (in progress)
+- Web client
+- Direct messaging
 
 ## How to test
 
