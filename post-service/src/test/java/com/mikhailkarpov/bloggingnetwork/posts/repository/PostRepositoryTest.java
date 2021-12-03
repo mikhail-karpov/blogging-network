@@ -1,18 +1,16 @@
 package com.mikhailkarpov.bloggingnetwork.posts.repository;
 
 import com.mikhailkarpov.bloggingnetwork.posts.config.PersistenceTestConfig;
-import com.mikhailkarpov.bloggingnetwork.posts.domain.PostComment;
-import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
-import com.mikhailkarpov.bloggingnetwork.posts.util.EntityUtils;
+import com.mikhailkarpov.bloggingnetwork.posts.domain.PostProjection;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ContextConfiguration;
-import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -25,74 +23,36 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PostRepositoryTest {
 
     @Autowired
-    private TestEntityManager entityManager;
-
-    @Autowired
     private PostRepository postRepository;
 
     @Test
-    void givenUser_whenSavePostsAndFindByUserId_thenFound() {
+    @Sql(scripts = "/db_scripts/insert_posts.sql")
+    void givenPost_whenFindPostProjectionById_thenFound() {
         //given
-        String userId = UUID.randomUUID().toString();
-        for (int i = 0; i < 10; i++) {
-            Post post = new Post(userId, RandomStringUtils.randomAlphabetic(25));
-            entityManager.persist(post);
-        }
-        entityManager.flush();
+        UUID postId = UUID.fromString("32ccebc5-22c8-4d39-9044-aee9ec4e30f3");
 
         //when
-        Page<Post> posts = postRepository.findByUserId(userId, PageRequest.of(2, 4));
+        Optional<PostProjection> post = this.postRepository.findPostById(postId);
 
         //then
-        assertThat(posts.getTotalElements()).isEqualTo(10L);
-        assertThat(posts.getSize()).isEqualTo(4);
-        assertThat(posts.getNumber()).isEqualTo(2);
-        assertThat(posts.getContent()).isNotNull();
-        assertThat(posts.getContent().size()).isEqualTo(2);
+        assertThat(post).isPresent();
+        assertThat(post.get().getId()).isEqualTo(postId);
+        assertThat(post.get().getUserId()).isEqualTo("user-1");
+        assertThat(post.get().getContent()).isEqualTo("Hello world!");
     }
 
     @Test
-    void givenPostWithComments_whenFindWithComments_thenFound() {
-        //given
-        Post post = createRandomPostWithComments(10);
-        UUID postId = entityManager.persistAndGetId(post, UUID.class);
-        entityManager.flush();
-
+    @Sql(scripts = "/db_scripts/insert_posts.sql")
+    void givenPosts_whenFindPostProjectionByUserId_thenFound() {
         //when
-        Optional<Post> foundPost = postRepository.findByIdWithComments(postId);
+        PageRequest pageRequest = PageRequest.of(0, 4, Sort.by(Sort.Direction.DESC, "createdDate"));
+        Page<PostProjection> posts = this.postRepository.findPostsByUserId("user-1", pageRequest);
 
         //then
-        assertThat(foundPost).isPresent();
-        assertThat(foundPost.get().getPostComments().size()).isEqualTo(10);
-    }
-
-    @Test
-    void givenPostAndComments_whenFindCommentsByPostId_thenFound() {
-        //given
-        Post post = createRandomPostWithComments(10);
-        UUID postId = entityManager.persistAndGetId(post, UUID.class);
-        entityManager.flush();
-
-        //when
-        PageRequest pageRequest = PageRequest.of(2, 4);
-        Page<PostComment> comments = postRepository.findCommentsByPostId(postId, pageRequest);
-
-        //then
-        assertThat(comments).isNotNull();
-        assertThat(comments.getTotalElements()).isEqualTo(10L);
-        assertThat(comments.getTotalPages()).isEqualTo(3);
-        assertThat(comments.getNumber()).isEqualTo(2);
-        assertThat(comments.getContent().size()).isEqualTo(2);
-    }
-
-    private Post createRandomPostWithComments(int commentsCount) {
-        assertThat(commentsCount).isGreaterThan(0);
-
-        Post post = EntityUtils.createRandomPost(25);
-        for (int i = 0; i < commentsCount; i++) {
-            PostComment postComment = EntityUtils.createRandomPostComment(15);
-            post.addComment(postComment);
-        }
-        return post;
+        assertThat(posts.getTotalPages()).isEqualTo(1);
+        assertThat(posts.getTotalElements()).isEqualTo(2L);
+        assertThat(posts.getNumberOfElements()).isEqualTo(2);
+        assertThat(posts.getContent().get(0).getId()).isEqualTo(UUID.fromString("a41d09c1-7aef-4328-8fc4-141092133f88"));
+        assertThat(posts.getContent().get(1).getId()).isEqualTo(UUID.fromString("32ccebc5-22c8-4d39-9044-aee9ec4e30f3"));
     }
 }

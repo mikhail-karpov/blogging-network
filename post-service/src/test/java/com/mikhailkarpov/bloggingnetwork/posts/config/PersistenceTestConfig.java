@@ -1,5 +1,7 @@
 package com.mikhailkarpov.bloggingnetwork.posts.config;
 
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEventPublisher;
+import org.mockito.Mockito;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -28,5 +30,10 @@ public class PersistenceTestConfig {
                 .username(postgreSQLContainer.getUsername())
                 .password(postgreSQLContainer.getPassword())
                 .build();
+    }
+
+    @Bean
+    public PostEventPublisher postEventPublisher() {
+        return Mockito.mock(PostEventPublisher.class);
     }
 }

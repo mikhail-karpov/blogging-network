@@ -1,10 +1,6 @@
 package com.mikhailkarpov.bloggingnetwork.posts.config;
 
-import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import org.junit.jupiter.api.AfterEach;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -54,23 +50,6 @@ public abstract class AbstractIT {
         registry.add("spring.datasource.driver-class-name", () -> POSTGRES.getDriverClassName());
         registry.add("spring.datasource.username", () -> POSTGRES.getUsername());
         registry.add("spring.datasource.password", () -> POSTGRES.getPassword());
-    }
-
-    @Autowired
-    private PostRepository postRepository;
-
-    @AfterEach
-    void cleanRepository() {
-
-        postRepository.deleteAll();
-    }
-
-    @Autowired
-    private RabbitAdmin rabbitAdmin;
-
-    @AfterEach
-    void purgeQueue() {
-        this.rabbitAdmin.purgeQueue(RabbitMQConfig.POST_EVENT_QUEUE, true);
     }
 }
 

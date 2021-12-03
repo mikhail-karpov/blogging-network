@@ -1,13 +1,10 @@
 package com.mikhailkarpov.bloggingnetwork.posts.api;
 
-import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.CreatePostRequest;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PagedResult;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PostDto;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
 import com.mikhailkarpov.bloggingnetwork.posts.service.PostService;
-import com.mikhailkarpov.bloggingnetwork.posts.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,7 +26,6 @@ import java.util.UUID;
 public class PostController {
 
     private final PostService postService;
-    private final UserService userService;
 
     @PostMapping
     public ResponseEntity<PostDto> createPost(@Valid @RequestBody CreatePostRequest request,
@@ -38,40 +34,24 @@ public class PostController {
 
         String userId = jwt.getSubject();
         String content = request.getContent();
-        Post post = postService.save(new Post(userId, content));
+        UUID postId = this.postService.createPost(userId, content);
 
-        URI location = uriComponentsBuilder.path("/posts/{id}").build(post.getId());
+        URI location = uriComponentsBuilder.path("/posts/{id}").build(postId.toString());
         return ResponseEntity.created(location).build();
     }
 
     @GetMapping("/{id}")
-    public PostDto findById(@PathVariable("id") UUID postId) {
+    public ResponseEntity<PostDto> findById(@PathVariable("id") UUID postId) {
 
-        Post post = findPost(postId);
-
-        return PostDto.builder()
-                .id(post.getId().toString())
-                .content(post.getContent())
-                .createdDate(post.getCreatedDate())
-                .user(this.userService.getUserById(post.getUserId()))
-                .build();
+        return this.postService.findById(postId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/users/{id}")
     public PagedResult<PostDto> findAllByUserId(@PathVariable("id") String userId, Pageable pageable) {
 
-        UserProfileDto user = this.userService.getUserById(userId);
-
-        Page<PostDto> posts = this.postService.findAllByUserId(userId, pageable)
-                .map(post ->
-                        PostDto.builder()
-                                .id(post.getId().toString())
-                                .content(post.getContent())
-                                .createdDate(post.getCreatedDate())
-                                .user(user)
-                                .build()
-                );
-
+        Page<PostDto> posts = this.postService.findAllByUserId(userId, pageable);
         return new PagedResult<>(posts);
     }
 
@@ -79,19 +59,15 @@ public class PostController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePostById(@PathVariable("id") UUID postId, @AuthenticationPrincipal Jwt jwt) {
 
-        Post post = findPost(postId);
-        if (!jwt.getSubject().equals(post.getUserId())) {
+        PostDto post = this.postService.findById(postId).orElseThrow(() -> {
+            String message = String.format("Post with id=%s not found", postId);
+            return new ResourceNotFoundException(message);
+        });
+
+        if (!post.getUser().getUserId().equals(jwt.getSubject())) {
             throw new AccessDeniedException("Forbidden to delete post");
         }
 
-        postService.deleteById(postId);
-    }
-
-    private Post findPost(UUID postId) {
-
-        return postService.findById(postId, false).orElseThrow(() -> {
-            String message = String.format("Post with id='%s' not found", postId);
-            return new ResourceNotFoundException(message);
-        });
+        this.postService.deleteById(postId);
     }
 }

@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Data
-public class PostCommentDto {
+public class CommentDto {
 
     private String id;
     private String comment;
@@ -15,7 +15,7 @@ public class PostCommentDto {
     private UserProfileDto user;
 
     @Builder
-    public PostCommentDto(String id, UserProfileDto user, String comment, Instant createdDate) {
+    public CommentDto(String id, UserProfileDto user, String comment, Instant createdDate) {
         this.id = id;
         this.user = user;
         this.comment = comment;

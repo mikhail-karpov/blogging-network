@@ -1,10 +1,16 @@
 package com.mikhailkarpov.bloggingnetwork.posts.api;
 
-import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
+import com.mikhailkarpov.bloggingnetwork.posts.config.SecurityTestConfig;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.PostDto;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.service.PostService;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -15,7 +21,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PostController.class)
-class PostControllerSecurityTest extends AbstractControllerTest {
+@ContextConfiguration(classes = SecurityTestConfig.class)
+class PostControllerSecurityTest {
+
+    @Autowired
+    private MockMvc mockMvc;
 
     @MockBean
     private PostService postService;
@@ -47,9 +57,12 @@ class PostControllerSecurityTest extends AbstractControllerTest {
     void givenNotOwner_whenDeletePost_thenForbidden() throws Exception {
         //given
         UUID postId = UUID.randomUUID();
-        Post post = new Post("owner", "Post content");
+        PostDto post = Mockito.mock(PostDto.class);
+        UserProfileDto user = Mockito.mock(UserProfileDto.class);
 
-        when(postService.findById(postId, false)).thenReturn(Optional.of(post));
+        when(postService.findById(postId)).thenReturn(Optional.of(post));
+        when(post.getUser()).thenReturn(user);
+        when(user.getUserId()).thenReturn("user");
 
         //when
         mockMvc.perform(delete("/posts/{id}", postId)
@@ -57,7 +70,7 @@ class PostControllerSecurityTest extends AbstractControllerTest {
                 .andExpect(status().isForbidden());
 
         //then
-        verify(postService).findById(postId, false);
+        verify(postService).findById(postId);
         verifyNoMoreInteractions(postService);
     }
 }

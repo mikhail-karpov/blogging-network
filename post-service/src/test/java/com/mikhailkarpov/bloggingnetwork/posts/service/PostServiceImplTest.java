@@ -1,151 +1,145 @@
 package com.mikhailkarpov.bloggingnetwork.posts.service;
 
-import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
+import com.mikhailkarpov.bloggingnetwork.posts.config.PersistenceTestConfig;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.PostDto;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
 import com.mikhailkarpov.bloggingnetwork.posts.messaging.EventStatus;
 import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEvent;
 import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEventPublisher;
+import com.mikhailkarpov.bloggingnetwork.posts.repository.CommentRepository;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
-import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.jdbc.Sql;
+import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
-import java.util.Collections;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(SpringExtension.class)
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ContextConfiguration(classes = PersistenceTestConfig.class)
 class PostServiceImplTest {
 
-    @Mock
+    @Autowired
     private PostRepository postRepository;
 
-    @Mock
+    @Autowired
+    private CommentRepository commentRepository;
+
+    @MockBean
+    private UserService userService;
+
+    @MockBean
     private PostEventPublisher eventPublisher;
 
-    @InjectMocks
+    @Captor
+    ArgumentCaptor<PostEvent> eventArgumentCaptor;
+
     private PostServiceImpl postService;
 
-    @Captor
-    private ArgumentCaptor<PostEvent> eventArgumentCaptor;
-
-    private final Post post = new Post("user", "content");
-    private final UUID postId = post.getId();
-    private final PageRequest pageRequest = PageRequest.of(1, 3);
-    private final PageImpl<Post> postPage =
-            new PageImpl<>(Collections.singletonList(post), pageRequest, 4L);
+    @BeforeEach
+    void setUp() {
+        this.postService = new PostServiceImpl(this.postRepository, this.userService);
+    }
 
     @Test
-    void givenPost_whenDeleteById_thenDelete() {
+    void whenCreatePost_thenEventIsPublishedAndPostFound() {
         //given
-        when(postRepository.findByIdWithComments(postId)).thenReturn(Optional.of(post));
+        String userId = UUID.randomUUID().toString();
+        String postContent = RandomStringUtils.randomAlphabetic(35);
+
+        UserProfileDto user = new UserProfileDto(userId, "user-name");
+        when(this.userService.getUserById(userId)).thenReturn(user);
 
         //when
-        postService.deleteById(postId);
+        UUID postId = this.postService.createPost(userId, postContent);
+        Optional<PostDto> foundPost = this.postService.findById(postId);
 
         //then
-        verify(postRepository).findByIdWithComments(postId);
-        verify(postRepository).delete(post);
-        verify(eventPublisher).publish(eventArgumentCaptor.capture());
+        assertThat(foundPost).isPresent();
 
-        PostEvent event = eventArgumentCaptor.getValue();
+        PostDto postDto = foundPost.get();
+        assertThat(postDto.getId()).isEqualTo(postId.toString());
+        assertThat(postDto.getContent()).isEqualTo(postContent);
+        assertThat(postDto.getCreatedDate()).isBefore(Instant.now());
+        assertThat(postDto.getUser()).isEqualTo(user);
+
+        verify(this.eventPublisher).publish(this.eventArgumentCaptor.capture());
+
+        PostEvent event = this.eventArgumentCaptor.getValue();
+        assertThat(event.getAuthorId()).isEqualTo(userId);
         assertThat(event.getPostId()).isEqualTo(postId.toString());
-        assertThat(event.getAuthorId()).isEqualTo(post.getUserId());
-        assertThat(event.getStatus()).isEqualTo(EventStatus.DELETED);
-    }
-
-    @Test
-    void givenNoPost_whenDeleteById_thenThrows() {
-        //given
-        when(postRepository.findByIdWithComments(any())).thenReturn(Optional.empty());
-
-        //when
-        UUID id = UUID.randomUUID();
-        assertThrows(ResourceNotFoundException.class, () -> postService.deleteById(id));
-
-        //then
-        verify(postRepository).findByIdWithComments(id);
-        verifyNoMoreInteractions(postRepository);
-        verifyNoInteractions(eventPublisher);
-    }
-
-    @Test
-    void test_findAll() {
-        //given
-        when(postRepository.findAll(pageRequest)).thenReturn(postPage);
-
-        //when
-        Page<Post> foundPage = postService.findAll(pageRequest);
-
-        //then
-        Assertions.assertThat(foundPage).usingRecursiveComparison().isEqualTo(postPage);
-    }
-
-    @Test
-    void test_findAllByUserId() {
-        //given
-        when(postRepository.findByUserId("userId", pageRequest)).thenReturn(postPage);
-
-        //when
-        Page<Post> foundPage = postService.findAllByUserId("userId", pageRequest);
-
-        //then
-        Assertions.assertThat(foundPage).usingRecursiveComparison().isEqualTo(postPage);
-    }
-
-    @Test
-    void test_findById() {
-        //given
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-
-        //when
-        Optional<Post> found = postService.findById(postId);
-
-        //then
-        assertThat(found).isPresent();
-        assertThat(found.get()).isEqualTo(post);
-    }
-
-    @Test
-    void test_findByIdWithComments() {
-        //given
-        when(postRepository.findByIdWithComments(postId)).thenReturn(Optional.of(post));
-
-        //when
-        Optional<Post> found = postService.findById(postId, true);
-
-        //then
-        assertThat(found).isPresent();
-        assertThat(found.get()).isEqualTo(post);
-    }
-
-    @Test
-    void test_save() {
-        //given
-        when(postRepository.save(post)).thenReturn(post);
-
-        //when
-        Post saved = postService.save(post);
-
-        //then
-        verify(eventPublisher).publish(eventArgumentCaptor.capture());
-        PostEvent event = eventArgumentCaptor.getValue();
-
-        assertThat(saved).isEqualTo(post);
-        assertThat(event.getPostId()).isEqualTo(postId.toString());
-        assertThat(event.getAuthorId()).isEqualTo(post.getUserId());
         assertThat(event.getStatus()).isEqualTo(EventStatus.CREATED);
+    }
+
+    @Test
+    @Sql(scripts = {"/db_scripts/insert_posts.sql", "/db_scripts/insert_comments.sql"})
+    void givenPosts_whenDeleteById_thenDeletedAndEventPublished() {
+        //given
+        UUID postId = UUID.fromString("32ccebc5-22c8-4d39-9044-aee9ec4e30f3");
+        assertThat(this.postService.findById(postId)).isPresent();
+
+        //when
+        this.postService.deleteById(postId);
+
+        //then
+        assertThat(this.postService.findById(postId)).isEmpty();
+        verify(this.eventPublisher).publish(this.eventArgumentCaptor.capture());
+
+        PostEvent event = this.eventArgumentCaptor.getValue();
+        assertThat(event.getAuthorId()).isEqualTo("user-1");
+        assertThat(event.getPostId()).isEqualTo(postId.toString());
+        assertThat(event.getStatus()).isEqualTo(EventStatus.DELETED);
+
+        PageRequest pageRequest = PageRequest.of(0, 3);
+        assertThat(this.commentRepository.findAllByPostId(postId, pageRequest).getTotalElements()).isEqualTo(0L);
+    }
+
+    @Test
+    void givenNoPost_whenDeleteById_thenException() {
+        //given
+        UUID postId = UUID.randomUUID();
+
+        //then
+        assertThatThrownBy(() -> this.postService.deleteById(postId)).isInstanceOf(ResourceNotFoundException.class);
+        verifyNoInteractions(this.eventPublisher);
+    }
+
+    @Test
+    @Sql(scripts = "/db_scripts/insert_posts.sql")
+    void givenPosts_whenFindByUserId_thenFound() {
+        //given
+        String userId = "user-1";
+        UserProfileDto user = new UserProfileDto(userId, "user-name");
+        when(this.userService.getUserById(userId)).thenReturn(user);
+
+        //when
+        PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "content"));
+        Page<PostDto> postPage = this.postService.findAllByUserId(userId, pageRequest);
+
+        //then
+        assertThat(postPage.getTotalElements()).isEqualTo(2L);
+        assertThat(postPage.getNumberOfElements()).isEqualTo(2);
+        assertThat(postPage.getContent().get(0).getContent()).isEqualTo("Second post by user-1");
+        assertThat(postPage.getContent().get(0).getUser()).isEqualTo(user);
+        assertThat(postPage.getContent().get(1).getContent()).isEqualTo("Hello world!");
+        assertThat(postPage.getContent().get(1).getUser()).isEqualTo(user);
     }
 }
