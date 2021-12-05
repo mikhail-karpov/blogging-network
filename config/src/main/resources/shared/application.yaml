@@ -1,6 +1,9 @@
 spring:
   cache:
     type: redis
+    prefix: ${spring.application.name}
+    expirations:
+      users: 60
 
   jpa:
     hibernate:
@@ -12,12 +15,12 @@ spring:
     password: ${POSTGRES_PASSWORD}
 
   redis:
-    host: redis
-    port: 6379
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT}
 
   rabbitmq:
-    host: rabbitmq
-    port: 5672
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
 
   security:
     oauth2:

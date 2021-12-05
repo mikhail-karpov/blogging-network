@@ -10,22 +10,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.Optional;
 
 @Slf4j
-@Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-
-    public static final String USER_PROFILE_CACHE = "userProfile";
 
     private final UserProfileRepository userProfileRepository;
     private final KeycloakAdminClient keycloakAdminClient;
@@ -36,7 +30,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @CachePut(value = USER_PROFILE_CACHE, key = "#result.id")
     @Transactional
     public UserProfileDto registerUser(UserRegistrationRequest request) {
 
@@ -63,7 +56,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Cacheable(value = USER_PROFILE_CACHE, key = "#userId", unless = "#result == null")
     @Transactional(readOnly = true)
     public Optional<UserProfileDto> findUserById(String userId) {
 
