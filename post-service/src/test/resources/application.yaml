@@ -4,9 +4,9 @@ spring:
       enabled: false
 
   cache:
-    users:
-      cache-name: userCache
-      time-to-live: 60
+    prefix: post-service
+    expirations:
+      users: 60
 
   jpa:
     hibernate:

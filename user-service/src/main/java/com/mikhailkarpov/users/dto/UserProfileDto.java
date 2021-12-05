@@ -5,16 +5,11 @@ import com.mikhailkarpov.users.domain.UserProfile;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Value;
-
-import java.io.Serializable;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserProfileDto implements Serializable {
-
-    private static final long serialVersionUId = 1L;
+public class UserProfileDto {
 
     @JsonProperty("userId")
     private String id;
@@ -24,6 +19,6 @@ public class UserProfileDto implements Serializable {
 
     public UserProfileDto(UserProfile profile) {
         this.id = profile.getId();
-        this.username = profile.getUsername();;
+        this.username = profile.getUsername();
     }
 }

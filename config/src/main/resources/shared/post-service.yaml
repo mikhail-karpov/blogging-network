@@ -1,9 +1,3 @@
-spring:
-  cache:
-    users:
-      cache-name: userCache
-      time-to-live: 60
-
 feign:
   circuitbreaker:
     enabled: true

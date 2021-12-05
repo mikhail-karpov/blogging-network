@@ -3,6 +3,7 @@ package com.mikhailkarpov.bloggingnetwork.posts.service;
 import com.mikhailkarpov.bloggingnetwork.posts.client.UserServiceClient;
 import com.mikhailkarpov.bloggingnetwork.posts.config.cache.CacheConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,15 +26,15 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
 @Import({CacheConfig.class, UserServiceImpl.class})
 @ImportAutoConfiguration(classes = {CacheAutoConfiguration.class, RedisAutoConfiguration.class})
 @TestPropertySource(properties = {
-        "spring.cache.users.cache-name=userCache",
-        "spring.cache.users.time-to-live=60"
+        "spring.cache.prefix=post-service",
+        "spring.cache.expirations.users=60"
 })
 @Testcontainers
 public class UserServiceCacheIT {
@@ -58,9 +59,9 @@ public class UserServiceCacheIT {
 
     @Test
     void contextLoads() {
-        assertThat(this.cacheManager).isNotNull();
-        assertThat(this.cacheManager instanceof RedisCacheManager).isTrue();
-        assertThat(getUserCache()).isNotNull();
+        assertNotNull(this.cacheManager);
+        assertTrue(this.cacheManager instanceof RedisCacheManager);
+        assertNotNull(this.getUserCache());
     }
 
     @Test
@@ -78,16 +79,16 @@ public class UserServiceCacheIT {
         //then
         verify(this.userServiceClient, times(1)).findById(userId);
 
-        assertThat(userCacheMiss).isEqualTo(user);
-        assertThat(userCacheHit).isEqualTo(user);
-        assertThat(getFromCacheById(userId)).isEqualTo(user);
+        assertEquals(user, userCacheMiss);
+        assertEquals(user, userCacheHit);
+        assertEquals(user, this.getFromCacheById(userId));
     }
 
     private Cache getUserCache() {
-        return this.cacheManager.getCache("userCache");
+        return this.cacheManager.getCache(CacheConfig.USER_CACHE);
     }
 
     private Object getFromCacheById(String userId) {
-        return getUserCache().get(userId).get();
+        return this.getUserCache().get(userId).get();
     }
 }

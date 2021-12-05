@@ -3,6 +3,11 @@ spring:
     config:
       enabled: false
 
+  cache:
+    prefix: user-service
+    expirations:
+      users: 60
+
   jpa:
     hibernate:
       ddl-auto: validate
