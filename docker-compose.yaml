@@ -83,6 +83,10 @@ services:
       - POSTGRES_URL=jdbc:postgresql://user-service-db:5432/user_service
       - POSTGRES_USER=${USER_SERVICE_DB_USER}
       - POSTGRES_PASSWORD=${USER_SERVICE_DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
     depends_on:
       - config
       - user-service-db
@@ -112,11 +116,17 @@ services:
       - POSTGRES_URL=jdbc:postgresql://post-service-db:5432/post_service
       - POSTGRES_USER=${POST_SERVICE_DB_USER}
       - POSTGRES_PASSWORD=${POST_SERVICE_DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
     depends_on:
       - config
       - keycloak
       - rabbitmq
+      - redis
       - post-service-db
+      - service-discovery
     restart: unless-stopped
 
   post-service-db:
@@ -140,6 +150,8 @@ services:
       - POSTGRES_URL=jdbc:postgresql://user-feed-db:5432/user_feed
       - POSTGRES_USER=${USER_FEED_DB_USER}
       - POSTGRES_PASSWORD=${USER_FEED_DB_PASSWORD}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
     depends_on:
       - config
       - user-feed-db
