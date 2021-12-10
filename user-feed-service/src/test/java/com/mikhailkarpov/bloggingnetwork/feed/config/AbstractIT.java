@@ -3,7 +3,7 @@ package com.mikhailkarpov.bloggingnetwork.feed.config;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.RabbitMQContainer;
 
 public class AbstractIT {
@@ -12,7 +12,7 @@ public class AbstractIT {
 
     static final KeycloakContainer KEYCLOAK;
 
-    static final PostgreSQLContainer POSTGRES;
+    static final GenericContainer REDIS;
 
     static {
         RABBIT_MQ_CONTAINER = new RabbitMQContainer("rabbitmq");
@@ -20,15 +20,11 @@ public class AbstractIT {
         KEYCLOAK = new KeycloakContainer("jboss/keycloak:15.0.2")
                 .withRealmImportFile("/userfeed-realm.json");
 
-        POSTGRES = new PostgreSQLContainer<>("postgres")
-                .withDatabaseName("user_feed_service")
-                .withUsername("user_feed_service")
-                .withPassword("pa55word")
-                .withExposedPorts(5432);
+        REDIS = new GenericContainer("redis:latest").withExposedPorts(6379);
 
         RABBIT_MQ_CONTAINER.start();
         KEYCLOAK.start();
-        POSTGRES.start();
+        REDIS.start();
     }
 
     @DynamicPropertySource
@@ -43,10 +39,8 @@ public class AbstractIT {
     }
 
     @DynamicPropertySource
-    private static void configDatasource(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", () -> POSTGRES.getJdbcUrl());
-        registry.add("spring.datasource.username", () -> POSTGRES.getUsername());
-        registry.add("spring.datasource.password", () -> POSTGRES.getPassword());
-        registry.add("spring.datasource.driver-class-name", () -> POSTGRES.getDriverClassName());
+    static void configRedis(DynamicPropertyRegistry registry) {
+        registry.add("spring.redis.host", REDIS::getHost);
+        registry.add("spring.redis.port", REDIS::getFirstMappedPort);
     }
 }

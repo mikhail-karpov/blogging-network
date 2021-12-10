@@ -5,17 +5,15 @@ import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFacto
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class AmqpConfig {
 
-    @Bean
-    @Primary
+//    @Bean
+//    @Primary
     public ConnectionFactory connectionFactory(RabbitProperties rabbitProperties) {
         String host = rabbitProperties.getHost();
         Integer port = rabbitProperties.getPort();

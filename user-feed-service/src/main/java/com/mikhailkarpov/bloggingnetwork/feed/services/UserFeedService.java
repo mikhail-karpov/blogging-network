@@ -1,8 +1,20 @@
 package com.mikhailkarpov.bloggingnetwork.feed.services;
 
-import com.mikhailkarpov.bloggingnetwork.feed.dto.UserFeed;
+import com.mikhailkarpov.bloggingnetwork.feed.model.Post;
+
+import java.util.List;
 
 public interface UserFeedService {
 
-    UserFeed getUserFeed(String userId, int page);
+    void startFollowing(String followerUserId, String followingUserId);
+
+    void stopFollowing(String followerUserId, String followingUserId);
+
+    void addPost(String creatorId, String postId);
+
+    void removePost(String creatorId, String postId);
+
+    void generateUserFeed(String userId);
+
+    List<Post> getUserFeed(String userId, int page, int size);
 }
