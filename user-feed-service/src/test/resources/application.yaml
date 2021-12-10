@@ -3,11 +3,6 @@ spring:
     config:
       enabled: false
 
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
-
   security:
     oauth2:
       client:
@@ -41,4 +36,4 @@ feign:
 
 logging:
   level:
-    com.mikhailkarpov.bloggingnetwork.feed.client.UserServiceClient: DEBUG
+    com.mikhailkarpov.bloggingnetwork.feed.client.PostServiceClient: DEBUG

@@ -1,11 +1,13 @@
 package com.mikhailkarpov.bloggingnetwork.feed.messaging;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class PostEvent {
+@AllArgsConstructor
+public class PostMessage {
 
     public enum Status {
         CREATED, DELETED
@@ -15,6 +17,7 @@ public class PostEvent {
 
     private String postId;
 
-    private Status status;
+    private String content;
 
+    private Status status;
 }

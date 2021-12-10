@@ -1,7 +1,5 @@
 package com.mikhailkarpov.bloggingnetwork.feed.config.messaging;
 
-import com.mikhailkarpov.bloggingnetwork.feed.messaging.PostEventListener;
-import com.mikhailkarpov.bloggingnetwork.feed.services.ActivityService;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -10,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class PostEventListenerConfig {
+public class PostQueueBindingConfig {
 
     public static final String TOPIC_EXCHANGE = "posts";
     public static final String POST_EVENT_QUEUE = "post-event-queue";
@@ -41,10 +39,5 @@ public class PostEventListenerConfig {
                 .bind(postEventQueue)
                 .to(postTopicExchange)
                 .with(POST_DELETED_ROUTING_KEY);
-    }
-
-    @Bean
-    public PostEventListener postEventListener(ActivityService activityService) {
-        return new PostEventListener(activityService);
     }
 }

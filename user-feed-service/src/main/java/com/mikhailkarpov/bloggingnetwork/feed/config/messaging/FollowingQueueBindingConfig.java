@@ -1,7 +1,5 @@
 package com.mikhailkarpov.bloggingnetwork.feed.config.messaging;
 
-import com.mikhailkarpov.bloggingnetwork.feed.messaging.FollowingEventListener;
-import com.mikhailkarpov.bloggingnetwork.feed.services.ActivityService;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -10,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class FollowingEventListenerConfig {
+public class FollowingQueueBindingConfig {
 
     public static final String TOPIC_EXCHANGE = "users";
     public static final String FOLLOWING_EVENT_QUEUE = "following-event-queue";
@@ -41,10 +39,5 @@ public class FollowingEventListenerConfig {
                 .bind(followingEventQueue)
                 .to(usersTopicExchange)
                 .with(UNFOLLOW_ROUTING_KEY);
-    }
-
-    @Bean
-    public FollowingEventListener followingEventListener(ActivityService activityService) {
-        return new FollowingEventListener(activityService);
     }
 }

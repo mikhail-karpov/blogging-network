@@ -147,26 +147,14 @@ services:
       - CONFIG_URI=http://config:8888
       - CLIENT_ID=user-feed-service
       - CLIENT_SECRET=a505c1d6-1a12-40b3-aecc-355304895b99
-      - POSTGRES_URL=jdbc:postgresql://user-feed-db:5432/user_feed
-      - POSTGRES_USER=${USER_FEED_DB_USER}
-      - POSTGRES_PASSWORD=${USER_FEED_DB_PASSWORD}
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       - config
-      - user-feed-db
+      - redis
       - keycloak
       - rabbitmq
       - service-discovery
     restart: unless-stopped
-
-  user-feed-db:
-    image: postgres
-    container_name: user-feed-db
-    environment:
-      - POSTGRES_DB=user_feed
-      - POSTGRES_USER=${USER_FEED_DB_USER}
-      - POSTGRES_PASSWORD=${USER_FEED_DB_PASSWORD}
-    restart: unless-stopped
-    ports:
-      - "54323:5432"

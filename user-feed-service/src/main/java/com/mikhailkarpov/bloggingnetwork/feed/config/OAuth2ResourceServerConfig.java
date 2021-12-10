@@ -1,4 +1,4 @@
-package com.mikhailkarpov.bloggingnetwork.feed.config.security;
+package com.mikhailkarpov.bloggingnetwork.feed.config;
 
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;

@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.mikhailkarpov.bloggingnetwork.feed.config.AbstractIT;
 import com.mikhailkarpov.bloggingnetwork.feed.config.MockPostServiceConfig;
-import com.mikhailkarpov.bloggingnetwork.feed.dto.Post;
-import com.mikhailkarpov.bloggingnetwork.feed.dto.UserProfile;
+import com.mikhailkarpov.bloggingnetwork.feed.model.Post;
+import com.mikhailkarpov.bloggingnetwork.feed.model.UserProfile;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = MockPostServiceConfig.class)
@@ -50,18 +50,17 @@ class PostServiceClientIT extends AbstractIT {
     @Test
     void circuitBreakerShouldExists() {
         CircuitBreaker circuitBreaker = this.circuitBreakerRegistry.circuitBreaker("post-service");
-        assertThat(circuitBreaker).isNotNull();
+        assertNotNull(circuitBreaker);
     }
 
     @Test
     void givenOkResponse_whenGetPostById_thenPresent() throws JsonProcessingException {
         //given
-        UserProfile profile = new UserProfile("userId", "user");
         Post post = Post.builder()
                 .id("postId")
                 .content("Post content")
                 .createdDate(LocalDateTime.of(2021, 10, 13, 15, 35, 43))
-                .user(profile)
+                .user(new UserProfile("userId", "user"))
                 .build();
 
         for (WireMockServer service : services) {
@@ -77,13 +76,12 @@ class PostServiceClientIT extends AbstractIT {
         Optional<Post> foundPost = this.postServiceClient.getPostById("found");
 
         //then
-        assertThat(foundPost).isPresent();
-        assertThat(foundPost.get()).usingRecursiveComparison().isEqualTo(post);
+        assertTrue(foundPost.isPresent());
+        assertEquals(post, foundPost.get());
     }
 
     @Test
     void givenNotFoundResponse_whenGetPostById_thenEmpty() {
-        //given
         for (WireMockServer service : services) {
             service.stubFor(get("/posts/not-found")
                     .withHeader("Authorization", matching("Bearer .*"))
@@ -91,31 +89,17 @@ class PostServiceClientIT extends AbstractIT {
                             .withStatus(404)));
         }
 
-        //when
-        Optional<Post> post = this.postServiceClient.getPostById("not-found");
-
-        //then
-        assertThat(post).isEmpty();
+        assertFalse(this.postServiceClient.getPostById("not-found").isPresent());
     }
 
     @Test
     void givenServerError_whenGetById_thenFallbackIsCalled() {
-        //given
         for (WireMockServer service : services) {
             service.stubFor(get("/posts/error")
                     .withHeader("Authorization", matching("Bearer .*"))
                     .willReturn(serverError()));
         }
 
-        //when
-        Optional<Post> post = this.postServiceClient.getPostById("error");
-
-        //then
-        assertThat(post).isPresent();
-        assertThat(post.get().getId()).isEqualTo("error");
-        assertThat(post.get().getContent()).isEqualTo(PostServiceClientFallback.DEFAULT);
-        assertThat(post.get().getUser()).isNotNull();
-        assertThat(post.get().getUser()).hasNoNullFieldsOrProperties();
-        assertThat(post.get().getCreatedDate()).isNotNull();
+        assertFalse(this.postServiceClient.getPostById("error").isPresent());
     }
 }
