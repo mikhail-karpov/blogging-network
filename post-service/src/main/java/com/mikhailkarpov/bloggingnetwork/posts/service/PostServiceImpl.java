@@ -5,9 +5,12 @@ import com.mikhailkarpov.bloggingnetwork.posts.domain.PostProjection;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.CreatePostRequest;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PostDto;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
+import com.mikhailkarpov.bloggingnetwork.posts.event.PostCreatedEvent;
+import com.mikhailkarpov.bloggingnetwork.posts.event.PostDeletedEvent;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,10 +28,14 @@ public class PostServiceImpl implements PostService {
 
     private final UserService userService;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     @Override
     @Transactional
     public UUID createPost(String userId, String content) {
         Post post = this.postRepository.save(new Post(userId, content));
+        this.eventPublisher.publishEvent(new PostCreatedEvent(userId, post.getId().toString()));
+
         return post.getId();
     }
 
@@ -36,12 +43,13 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public void deleteById(UUID postId) {
 
-        if (!this.postRepository.existsById(postId)) {
+        PostProjection post = this.postRepository.findPostById(postId).orElseThrow(() -> {
             String message = String.format("Post with id=%s not found", postId);
-            throw new ResourceNotFoundException(message);
-        }
+            return new ResourceNotFoundException(message);
+        });
 
         this.postRepository.deleteById(postId);
+        this.eventPublisher.publishEvent(new PostDeletedEvent(post.getUserId(), postId.toString()));
     }
 
     @Override

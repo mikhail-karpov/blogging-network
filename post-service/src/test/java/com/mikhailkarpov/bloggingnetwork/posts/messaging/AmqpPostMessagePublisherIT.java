@@ -1,6 +1,9 @@
 package com.mikhailkarpov.bloggingnetwork.posts.messaging;
 
 import com.mikhailkarpov.bloggingnetwork.posts.config.RabbitMQConfig;
+import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
+import com.mikhailkarpov.bloggingnetwork.posts.event.PostCreatedEvent;
+import com.mikhailkarpov.bloggingnetwork.posts.event.PostDeletedEvent;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,7 +19,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -28,9 +30,9 @@ import static org.mockito.ArgumentMatchers.any;
 @ContextConfiguration(classes = {
         RabbitMQConfig.class,
         RabbitAutoConfiguration.class,
-        AmqpPostEventPublisherIT.TestConfig.class})
+        AmqpPostMessagePublisherIT.TestConfig.class})
 @Testcontainers
-class AmqpPostEventPublisherIT {
+class AmqpPostMessagePublisherIT {
 
     @TestConfiguration
     @RabbitListenerTest
@@ -42,7 +44,7 @@ class AmqpPostEventPublisherIT {
             private static final String LISTENER_ID = "post-event-listener";
 
             @RabbitListener(id = LISTENER_ID, queues = "post-event-queue")
-            public void handle(PostEvent event) {
+            public void handle(PostMessage event) {
                 //do nothing
             }
         }
@@ -57,7 +59,7 @@ class AmqpPostEventPublisherIT {
     }
 
     @Autowired
-    private AmqpPostEventPublisher eventPublisher;
+    private AmqpPostMessagePublisher eventPublisher;
 
     @Autowired
     private RabbitListenerTestHarness harness;
@@ -71,8 +73,8 @@ class AmqpPostEventPublisherIT {
                 this.harness.getLatchAnswerFor(TestConfig.TestListener.LISTENER_ID, 2);
         Mockito.doAnswer(answer).when(listener).handle(any());
 
-        this.eventPublisher.publish(new PostEvent("postId", "authorId", EventStatus.CREATED));
-        this.eventPublisher.publish(new PostEvent("postId", "authorId", EventStatus.DELETED));
+        this.eventPublisher.publish(new PostCreatedEvent("author-id", "post-id"));
+        this.eventPublisher.publish(new PostDeletedEvent("author-id", "post-id"));
 
         Assertions.assertThat(answer.await(30)).isTrue();
         Mockito.verify(listener, Mockito.times(2)).handle(any());

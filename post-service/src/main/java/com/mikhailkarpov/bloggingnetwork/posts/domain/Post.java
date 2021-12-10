@@ -12,7 +12,6 @@ import static javax.persistence.CascadeType.ALL;
 import static javax.persistence.FetchType.LAZY;
 
 @Entity
-@EntityListeners(PostAuditListener.class)
 @Table(name = "post")
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // for JPA
 public class Post extends BaseEntity {
