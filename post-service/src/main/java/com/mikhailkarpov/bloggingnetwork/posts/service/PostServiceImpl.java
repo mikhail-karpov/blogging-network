@@ -5,7 +5,8 @@ import com.mikhailkarpov.bloggingnetwork.posts.domain.PostProjection;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PostDto;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
-import com.mikhailkarpov.bloggingnetwork.posts.messaging.EventStatus;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostCreatedEvent;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostDeletedEvent;
 import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEvent;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,7 @@ public class PostServiceImpl implements PostService {
     public UUID createPost(String userId, String content) {
         Post post = this.postRepository.save(new Post(userId, content));
 
-        PostEvent event = new PostEvent(post.getId().toString(), userId, EventStatus.CREATED);
+        PostEvent event = new PostCreatedEvent(post.getId(), userId, content);
         this.eventPublisher.publishEvent(event);
 
         return post.getId();
@@ -48,9 +49,9 @@ public class PostServiceImpl implements PostService {
             return new ResourceNotFoundException(message);
         });
 
-        this.postRepository.deleteById(postId);
+        PostEvent event = new PostDeletedEvent(postId, post.getUserId());
 
-        PostEvent event = new PostEvent(postId.toString(), post.getUserId(), EventStatus.DELETED);
+        this.postRepository.deleteById(postId);
         this.eventPublisher.publishEvent(event);
     }
 

@@ -14,8 +14,9 @@ Contract.make {
             header('amqp_receivedRoutingKey', 'post.created')
         }
         body ([
-                postId: "post-id",
                 authorId: "author-id",
+                postId: "37e4e4d0-c615-4c5c-85b5-adab30093def",
+                postContent: "Post content",
                 status: "CREATED"
         ])
     }

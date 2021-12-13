@@ -85,7 +85,8 @@ class PostServiceImplTest {
 
         PostEvent event = this.eventArgumentCaptor.getValue();
         assertThat(event.getAuthorId()).isEqualTo(userId);
-        assertThat(event.getPostId()).isEqualTo(postId.toString());
+        assertThat(event.getPostId()).isEqualTo(postId);
+        assertThat(event.getPostContent()).isEqualTo(postContent);
         assertThat(event.getStatus()).isEqualTo(EventStatus.CREATED);
     }
 
@@ -105,7 +106,7 @@ class PostServiceImplTest {
 
         PostEvent event = this.eventArgumentCaptor.getValue();
         assertThat(event.getAuthorId()).isEqualTo("user-1");
-        assertThat(event.getPostId()).isEqualTo("32ccebc5-22c8-4d39-9044-aee9ec4e30f3");
+        assertThat(event.getPostId()).isEqualTo(postId);
         assertThat(event.getStatus()).isEqualTo(EventStatus.DELETED);
 
         PageRequest pageRequest = PageRequest.of(0, 3);
