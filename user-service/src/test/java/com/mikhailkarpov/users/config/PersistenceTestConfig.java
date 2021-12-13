@@ -1,7 +1,5 @@
 package com.mikhailkarpov.users.config;
 
-import com.mikhailkarpov.users.messaging.FollowingEventPublisher;
-import org.mockito.Mockito;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -35,10 +33,5 @@ public class PersistenceTestConfig {
         dataSourceBuilder.password(postgreSQLContainer.getPassword());
 
         return dataSourceBuilder.build();
-    }
-
-    @Bean
-    public FollowingEventPublisher followingEventPublisher() {
-        return Mockito.mock(FollowingEventPublisher.class);
     }
 }

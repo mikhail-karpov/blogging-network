@@ -1,8 +1,7 @@
 package com.mikhailkarpov.users.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mikhailkarpov.users.messaging.FollowingEventPublisher;
-import com.mikhailkarpov.users.messaging.RabbitMQFollowingMessageSender;
+import com.mikhailkarpov.users.messaging.RabbitMQFollowingEventPublisher;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -61,8 +60,8 @@ public class MessagingConfig {
     }
 
     @Bean
-    public FollowingEventPublisher followingEventPublisher(RabbitTemplate rabbitTemplate) {
-        return new RabbitMQFollowingMessageSender(
+    public RabbitMQFollowingEventPublisher followingEventPublisher(RabbitTemplate rabbitTemplate) {
+        return new RabbitMQFollowingEventPublisher(
                 rabbitTemplate, TOPIC_EXCHANGE, FOLLOW_ROUTING_KEY, UNFOLLOW_ROUTING_KEY);
     }
 }

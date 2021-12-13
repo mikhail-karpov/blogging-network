@@ -6,9 +6,11 @@ import com.mikhailkarpov.users.domain.UserProfile;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.exception.ResourceAlreadyExistsException;
 import com.mikhailkarpov.users.exception.ResourceNotFoundException;
+import com.mikhailkarpov.users.messaging.FollowingEvent;
 import com.mikhailkarpov.users.repository.FollowingRepository;
 import com.mikhailkarpov.users.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ public class FollowingServiceImpl implements FollowingService {
 
     private final UserProfileRepository userProfileRepository;
     private final FollowingRepository followingRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -34,6 +37,9 @@ public class FollowingServiceImpl implements FollowingService {
 
         Following following = new Following(follower, user);
         this.followingRepository.save(following);
+
+        FollowingEvent event = new FollowingEvent(followerId, userId, FollowingEvent.Status.FOLLOWED);
+        this.eventPublisher.publishEvent(event);
     }
 
     @Override
@@ -55,12 +61,13 @@ public class FollowingServiceImpl implements FollowingService {
     public void removeFromFollowers(String userId, String followerId) {
 
         FollowingId id = new FollowingId(followerId, userId);
-
         if (!this.followingRepository.existsById(id)) {
             throw new ResourceNotFoundException("Relationship not found");
         }
-
         this.followingRepository.deleteById(id);
+
+        FollowingEvent event = new FollowingEvent(followerId, userId, FollowingEvent.Status.UNFOLLOWED);
+        this.eventPublisher.publishEvent(event);
     }
 
     private UserProfile getUserById(String userId) {

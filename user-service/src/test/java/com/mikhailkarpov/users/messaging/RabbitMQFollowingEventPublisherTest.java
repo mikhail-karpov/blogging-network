@@ -12,7 +12,7 @@ import static com.mikhailkarpov.users.messaging.FollowingEvent.Status.FOLLOWED;
 import static com.mikhailkarpov.users.messaging.FollowingEvent.Status.UNFOLLOWED;
 
 @ExtendWith(MockitoExtension.class)
-class RabbitMQFollowingMessageSenderTest {
+class RabbitMQFollowingEventPublisherTest {
 
     private static final String EXCHANGE = "exchange";
     private static final String FOLLOWED_KEY = "followed";
@@ -21,11 +21,11 @@ class RabbitMQFollowingMessageSenderTest {
     @Mock
     private RabbitTemplate rabbitTemplate;
 
-    private RabbitMQFollowingMessageSender messageSender;
+    private RabbitMQFollowingEventPublisher messageSender;
 
     @BeforeEach
     void setUp() {
-        this.messageSender = new RabbitMQFollowingMessageSender(
+        this.messageSender = new RabbitMQFollowingEventPublisher(
                 this.rabbitTemplate, EXCHANGE, FOLLOWED_KEY, UNFOLLOWED_KEY);
     }
 
