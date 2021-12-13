@@ -14,8 +14,9 @@ Contract.make {
             header('amqp_receivedRoutingKey', 'post.deleted')
         }
         body ([
-                postId: "post-id",
                 authorId: "author-id",
+                postId: "35cacb21-dc2a-4912-afe7-51d693e8f208",
+                postContent: null,
                 status: "DELETED"
         ])
     }

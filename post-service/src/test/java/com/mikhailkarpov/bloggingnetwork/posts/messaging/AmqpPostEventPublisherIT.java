@@ -16,13 +16,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = {
@@ -65,16 +70,20 @@ class AmqpPostEventPublisherIT {
     @Test
     void testPublish() throws InterruptedException {
         TestConfig.TestListener listener = this.harness.getSpy(TestConfig.TestListener.LISTENER_ID);
-        Assertions.assertThat(listener).isNotNull();
+        assertNotNull(listener);
 
         LatchCountDownAndCallRealMethodAnswer answer =
                 this.harness.getLatchAnswerFor(TestConfig.TestListener.LISTENER_ID, 2);
-        Mockito.doAnswer(answer).when(listener).handle(any());
+        doAnswer(answer).when(listener).handle(any());
 
-        this.eventPublisher.publish(new PostEvent("postId", "authorId", EventStatus.CREATED));
-        this.eventPublisher.publish(new PostEvent("postId", "authorId", EventStatus.DELETED));
+        this.eventPublisher.publish(
+                new PostCreatedEvent(UUID.randomUUID(), "author-id", "Post content"));
 
-        Assertions.assertThat(answer.await(30)).isTrue();
-        Mockito.verify(listener, Mockito.times(2)).handle(any());
+        this.eventPublisher.publish(
+                new PostDeletedEvent(UUID.randomUUID(), "author-id"));
+
+        assertTrue(answer.await(30));
+        verify(listener).handle(any(PostCreatedEvent.class));
+        verify(listener).handle(any(PostDeletedEvent.class));
     }
 }

@@ -8,7 +8,6 @@ import javax.persistence.*;
 @Entity
 @Table(name = "following")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EntityListeners(FollowingEntityListener.class)
 public class Following extends BaseEntity {
 
     @EmbeddedId

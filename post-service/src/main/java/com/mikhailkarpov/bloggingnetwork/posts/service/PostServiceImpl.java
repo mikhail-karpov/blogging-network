@@ -2,18 +2,20 @@ package com.mikhailkarpov.bloggingnetwork.posts.service;
 
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.PostProjection;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.CreatePostRequest;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PostDto;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostCreatedEvent;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostDeletedEvent;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEvent;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,10 +27,16 @@ public class PostServiceImpl implements PostService {
 
     private final UserService userService;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     @Override
     @Transactional
     public UUID createPost(String userId, String content) {
         Post post = this.postRepository.save(new Post(userId, content));
+
+        PostEvent event = new PostCreatedEvent(post.getId(), userId, content);
+        this.eventPublisher.publishEvent(event);
+
         return post.getId();
     }
 
@@ -36,12 +44,15 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public void deleteById(UUID postId) {
 
-        if (!this.postRepository.existsById(postId)) {
+        PostProjection post = this.postRepository.findPostById(postId).orElseThrow(() -> {
             String message = String.format("Post with id=%s not found", postId);
-            throw new ResourceNotFoundException(message);
-        }
+            return new ResourceNotFoundException(message);
+        });
+
+        PostEvent event = new PostDeletedEvent(postId, post.getUserId());
 
         this.postRepository.deleteById(postId);
+        this.eventPublisher.publishEvent(event);
     }
 
     @Override

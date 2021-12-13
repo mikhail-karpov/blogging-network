@@ -102,7 +102,7 @@ class PostRabbitListenerTest {
         this.stubTrigger.trigger("post.created");
 
         assertTrue(this.answer.await(30));
-        verify(this.userFeedService).addPost("author-id", "post-id");
+        verify(this.userFeedService).addPost("author-id", "37e4e4d0-c615-4c5c-85b5-adab30093def");
     }
 
     @Test
@@ -110,6 +110,6 @@ class PostRabbitListenerTest {
         this.stubTrigger.trigger("post.deleted");
 
         assertTrue(this.answer.await(30));
-        verify(this.userFeedService).removePost("author-id", "post-id");
+        verify(this.userFeedService).removePost("author-id", "35cacb21-dc2a-4912-afe7-51d693e8f208");
     }
 }

@@ -6,7 +6,6 @@ import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
 import com.mikhailkarpov.bloggingnetwork.posts.messaging.EventStatus;
 import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEvent;
-import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEventPublisher;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.CommentRepository;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -47,7 +47,7 @@ class PostServiceImplTest {
     private UserService userService;
 
     @MockBean
-    private PostEventPublisher eventPublisher;
+    private ApplicationEventPublisher eventPublisher;
 
     @Captor
     ArgumentCaptor<PostEvent> eventArgumentCaptor;
@@ -56,7 +56,7 @@ class PostServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        this.postService = new PostServiceImpl(this.postRepository, this.userService);
+        this.postService = new PostServiceImpl(this.postRepository, this.userService, this.eventPublisher);
     }
 
     @Test
@@ -81,11 +81,12 @@ class PostServiceImplTest {
         assertThat(postDto.getCreatedDate()).isBefore(Instant.now());
         assertThat(postDto.getUser()).isEqualTo(user);
 
-        verify(this.eventPublisher).publish(this.eventArgumentCaptor.capture());
+        verify(this.eventPublisher).publishEvent(this.eventArgumentCaptor.capture());
 
         PostEvent event = this.eventArgumentCaptor.getValue();
         assertThat(event.getAuthorId()).isEqualTo(userId);
-        assertThat(event.getPostId()).isEqualTo(postId.toString());
+        assertThat(event.getPostId()).isEqualTo(postId);
+        assertThat(event.getPostContent()).isEqualTo(postContent);
         assertThat(event.getStatus()).isEqualTo(EventStatus.CREATED);
     }
 
@@ -101,11 +102,11 @@ class PostServiceImplTest {
 
         //then
         assertThat(this.postService.findById(postId)).isEmpty();
-        verify(this.eventPublisher).publish(this.eventArgumentCaptor.capture());
+        verify(this.eventPublisher).publishEvent(this.eventArgumentCaptor.capture());
 
         PostEvent event = this.eventArgumentCaptor.getValue();
         assertThat(event.getAuthorId()).isEqualTo("user-1");
-        assertThat(event.getPostId()).isEqualTo(postId.toString());
+        assertThat(event.getPostId()).isEqualTo(postId);
         assertThat(event.getStatus()).isEqualTo(EventStatus.DELETED);
 
         PageRequest pageRequest = PageRequest.of(0, 3);

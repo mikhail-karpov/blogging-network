@@ -1,21 +1,19 @@
 package com.mikhailkarpov.bloggingnetwork.posts.messaging;
 
-import lombok.Builder;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
-@NoArgsConstructor
-public class PostEvent {
+@AllArgsConstructor
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+public abstract class PostEvent {
 
-    private String postId;
-    private String authorId;
-    private EventStatus status;
-
-    @Builder
-    public PostEvent(String postId, String authorId, EventStatus status) {
-        this.postId = postId;
-        this.authorId = authorId;
-        this.status = status;
-    }
+    private final UUID postId;
+    private final String authorId;
+    private final String postContent;
+    private final EventStatus status;
 }
