@@ -1,7 +1,7 @@
 package com.mikhailkarpov.bloggingnetwork.posts.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mikhailkarpov.bloggingnetwork.posts.messaging.AmqpPostMessagePublisher;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.AmqpPostEventPublisher;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -85,8 +85,8 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public AmqpPostMessagePublisher amqpPostMessagePublisher(RabbitTemplate rabbitTemplate) {
-        return new AmqpPostMessagePublisher(
+    public AmqpPostEventPublisher amqpPostMessagePublisher(RabbitTemplate rabbitTemplate) {
+        return new AmqpPostEventPublisher(
                 rabbitTemplate, TOPIC_EXCHANGE, POST_CREATED_ROUTING_KEY, POST_DELETED_ROUTING_KEY);
     }
 }

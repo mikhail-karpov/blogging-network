@@ -1,11 +1,9 @@
 package com.mikhailkarpov.bloggingnetwork.posts.contract;
 
 import com.mikhailkarpov.bloggingnetwork.posts.config.RabbitMQConfig;
-import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
-import com.mikhailkarpov.bloggingnetwork.posts.event.PostCreatedEvent;
-import com.mikhailkarpov.bloggingnetwork.posts.event.PostDeletedEvent;
-import com.mikhailkarpov.bloggingnetwork.posts.event.PostAbstractEvent;
-import com.mikhailkarpov.bloggingnetwork.posts.messaging.AmqpPostMessagePublisher;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.AmqpPostEventPublisher;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.EventStatus;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEvent;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
@@ -42,18 +40,16 @@ public class MessagingBase {
     }
 
     @Autowired
-    private AmqpPostMessagePublisher amqpPostMessagePublisher;
-
-    private final Post post = new Post("author-id", "post-id");
+    private AmqpPostEventPublisher amqpPostEventPublisher;
 
     public void sendPostCreatedEvent() {
-        PostAbstractEvent event = new PostCreatedEvent("author-id", "post-id");
-        this.amqpPostMessagePublisher.publish(event);
+        PostEvent event = new PostEvent("post-id", "author-id", EventStatus.CREATED);
+        this.amqpPostEventPublisher.publish(event);
     }
 
     public void sendPostDeletedEvent() {
-        PostAbstractEvent event = new PostDeletedEvent("author-id", "post-id");
-        this.amqpPostMessagePublisher.publish(event);
+        PostEvent event = new PostEvent("post-id", "author-id", EventStatus.DELETED);
+        this.amqpPostEventPublisher.publish(event);
     }
 
 }

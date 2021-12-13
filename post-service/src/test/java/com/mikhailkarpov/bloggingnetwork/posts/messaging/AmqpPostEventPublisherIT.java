@@ -1,9 +1,6 @@
 package com.mikhailkarpov.bloggingnetwork.posts.messaging;
 
 import com.mikhailkarpov.bloggingnetwork.posts.config.RabbitMQConfig;
-import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
-import com.mikhailkarpov.bloggingnetwork.posts.event.PostCreatedEvent;
-import com.mikhailkarpov.bloggingnetwork.posts.event.PostDeletedEvent;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,9 +27,9 @@ import static org.mockito.ArgumentMatchers.any;
 @ContextConfiguration(classes = {
         RabbitMQConfig.class,
         RabbitAutoConfiguration.class,
-        AmqpPostMessagePublisherIT.TestConfig.class})
+        AmqpPostEventPublisherIT.TestConfig.class})
 @Testcontainers
-class AmqpPostMessagePublisherIT {
+class AmqpPostEventPublisherIT {
 
     @TestConfiguration
     @RabbitListenerTest
@@ -44,7 +41,7 @@ class AmqpPostMessagePublisherIT {
             private static final String LISTENER_ID = "post-event-listener";
 
             @RabbitListener(id = LISTENER_ID, queues = "post-event-queue")
-            public void handle(PostMessage event) {
+            public void handle(PostEvent event) {
                 //do nothing
             }
         }
@@ -59,7 +56,7 @@ class AmqpPostMessagePublisherIT {
     }
 
     @Autowired
-    private AmqpPostMessagePublisher eventPublisher;
+    private AmqpPostEventPublisher eventPublisher;
 
     @Autowired
     private RabbitListenerTestHarness harness;
@@ -73,8 +70,8 @@ class AmqpPostMessagePublisherIT {
                 this.harness.getLatchAnswerFor(TestConfig.TestListener.LISTENER_ID, 2);
         Mockito.doAnswer(answer).when(listener).handle(any());
 
-        this.eventPublisher.publish(new PostCreatedEvent("author-id", "post-id"));
-        this.eventPublisher.publish(new PostDeletedEvent("author-id", "post-id"));
+        this.eventPublisher.publish(new PostEvent("author-id", "post-id", EventStatus.CREATED));
+        this.eventPublisher.publish(new PostEvent("author-id", "post-id", EventStatus.DELETED));
 
         Assertions.assertThat(answer.await(30)).isTrue();
         Mockito.verify(listener, Mockito.times(2)).handle(any());

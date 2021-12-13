@@ -2,12 +2,11 @@ package com.mikhailkarpov.bloggingnetwork.posts.service;
 
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Post;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.PostProjection;
-import com.mikhailkarpov.bloggingnetwork.posts.dto.CreatePostRequest;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PostDto;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
-import com.mikhailkarpov.bloggingnetwork.posts.event.PostCreatedEvent;
-import com.mikhailkarpov.bloggingnetwork.posts.event.PostDeletedEvent;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.EventStatus;
+import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEvent;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -16,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -34,7 +32,9 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public UUID createPost(String userId, String content) {
         Post post = this.postRepository.save(new Post(userId, content));
-        this.eventPublisher.publishEvent(new PostCreatedEvent(userId, post.getId().toString()));
+
+        PostEvent event = new PostEvent(post.getId().toString(), userId, EventStatus.CREATED);
+        this.eventPublisher.publishEvent(event);
 
         return post.getId();
     }
@@ -49,7 +49,9 @@ public class PostServiceImpl implements PostService {
         });
 
         this.postRepository.deleteById(postId);
-        this.eventPublisher.publishEvent(new PostDeletedEvent(post.getUserId(), postId.toString()));
+
+        PostEvent event = new PostEvent(postId.toString(), post.getUserId(), EventStatus.DELETED);
+        this.eventPublisher.publishEvent(event);
     }
 
     @Override
