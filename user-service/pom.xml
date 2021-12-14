@@ -2,12 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
 	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.4.11</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<groupId>com.mikhailkarpov</groupId>
+		<artifactId>blogging-network</artifactId>
+		<version>1.0-SNAPSHOT</version>
 	</parent>
+
 	<groupId>com.mikhailkarpov</groupId>
 	<artifactId>user-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
@@ -15,7 +16,6 @@
 
 	<properties>
 		<java.version>1.8</java.version>
-		<spring-cloud.version>2020.0.4</spring-cloud.version>
 		<testcontainers.version>1.15.3</testcontainers.version>
 		<testcontainers-keycloak.version>1.8.0</testcontainers-keycloak.version>
 		<keycloak-admin-client.version>15.0.2</keycloak-admin-client.version>
@@ -140,13 +140,6 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-dependencies</artifactId>
-				<version>${spring-cloud.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-			<dependency>
 				<groupId>org.testcontainers</groupId>
 				<artifactId>testcontainers-bom</artifactId>
 				<version>${testcontainers.version}</version>
@@ -172,11 +165,6 @@
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.0.0-M5</version>
-			</plugin>
-			<plugin>
 				<groupId>org.springframework.cloud</groupId>
 				<artifactId>spring-cloud-contract-maven-plugin</artifactId>
 				<version>3.0.4</version>
@@ -185,18 +173,6 @@
 					<testFramework>JUNIT5</testFramework>
 					<packageWithBaseClasses>com.mikhailkarpov.users.contract</packageWithBaseClasses>
 				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-failsafe-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<goal>integration-test</goal>
-							<goal>verify</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 		</plugins>
 	</build>
