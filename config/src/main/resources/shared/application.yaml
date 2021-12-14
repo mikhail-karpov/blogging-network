@@ -39,6 +39,8 @@ spring:
           issuer-uri: ${app.keycloak.serverUrl}/realms/${app.keycloak.realm}
 
 eureka:
+  instance:
+    preferIpAddress: true
   client:
     serviceUrl:
       defaultZone: http://service-discovery:8761/eureka/
