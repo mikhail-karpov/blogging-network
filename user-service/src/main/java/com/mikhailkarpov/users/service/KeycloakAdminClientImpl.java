@@ -1,6 +1,8 @@
 package com.mikhailkarpov.users.service;
 
 import com.mikhailkarpov.users.config.KeycloakAdminConfig;
+import com.mikhailkarpov.users.exception.ResourceAlreadyExistsException;
+import com.mikhailkarpov.users.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.CreatedResponseUtil;
@@ -9,8 +11,11 @@ import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
+import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
@@ -25,13 +30,24 @@ public class KeycloakAdminClientImpl implements KeycloakAdminClient {
     public String createUser(UserRepresentation user) {
 
         Response response = usersResource.create(user);
+
+        if (response.getStatus() == 409) {
+            throw new ResourceAlreadyExistsException("User already exists");
+        }
+
         return CreatedResponseUtil.getCreatedId(response);
     }
 
     @Override
     public UserRepresentation findUserById(String userId) {
 
-        return usersResource.get(userId).toRepresentation();
+        try {
+            return usersResource.get(userId).toRepresentation();
+
+        } catch (NotFoundException e) {
+            String message = String.format("User with id='%s' not found", userId);
+            throw new ResourceNotFoundException(message);
+        }
     }
 
     @Override
@@ -53,6 +69,9 @@ public class KeycloakAdminClientImpl implements KeycloakAdminClient {
                 .build()) {
 
             return keycloak.tokenManager().getAccessToken();
+
+        } catch (NotAuthorizedException e) {
+            throw new BadCredentialsException("Bad credentials", e);
         }
     }
 }
