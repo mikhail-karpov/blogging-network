@@ -38,27 +38,26 @@ services:
       - KEYCLOAK_USER=${KEYCLOAK_USER}
       - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD}
       - DB_VENDOR=POSTGRES
-      - DB_ADDR=keycloak-db
+      - DB_ADDR=postgres
       - DB_DATABASE=keycloak
       - DB_SCHEMA=public
-      - DB_USER=${KEYCLOAK_DB_USER}
-      - DB_PASSWORD=${KEYCLOAK_DB_PASSWORD}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
     depends_on:
-      - keycloak-db
+      - postgres
     restart: unless-stopped
     ports:
       - "8080:8080"
 
-  keycloak-db:
-    image: postgres
-    container_name: keycloak-db
+  postgres:
+    build: ./postgres
+    container_name: postgres
     environment:
-      - POSTGRES_DB=keycloak
-      - POSTGRES_USER=${KEYCLOAK_DB_USER}
-      - POSTGRES_PASSWORD=${KEYCLOAK_DB_PASSWORD}
-    restart: unless-stopped
+      - POSTGRES_MULTIPLE_DATABASES=keycloak,user_service,post_service
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
-      - "54320:5432"
+      - "5432:5432"
 
   redis:
     image: redis
@@ -80,31 +79,20 @@ services:
       - CONFIG_URI=http://config:8888
       - KEYCLOAK_USER=${KEYCLOAK_USER}
       - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD}
-      - POSTGRES_URL=jdbc:postgresql://user-service-db:5432/user_service
-      - POSTGRES_USER=${USER_SERVICE_DB_USER}
-      - POSTGRES_PASSWORD=${USER_SERVICE_DB_PASSWORD}
+      - POSTGRES_URL=jdbc:postgresql://postgres:5432/user_service
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
     depends_on:
       - config
-      - user-service-db
+      - postgres
       - keycloak
       - redis
       - rabbitmq
     restart: unless-stopped
-
-  user-service-db:
-    image: postgres
-    container_name: user-service-db
-    environment:
-      - POSTGRES_DB=user_service
-      - POSTGRES_USER=${USER_SERVICE_DB_USER}
-      - POSTGRES_PASSWORD=${USER_SERVICE_DB_PASSWORD}
-    restart: unless-stopped
-    ports:
-      - "54321:5432"
 
   post-service:
     build: ./post-service
@@ -113,9 +101,9 @@ services:
       - CONFIG_URI=http://config:8888
       - CLIENT_ID=post-service
       - CLIENT_SECRET=9ac2c424-117b-4f69-b853-24c7f2661535
-      - POSTGRES_URL=jdbc:postgresql://post-service-db:5432/post_service
-      - POSTGRES_USER=${POST_SERVICE_DB_USER}
-      - POSTGRES_PASSWORD=${POST_SERVICE_DB_PASSWORD}
+      - POSTGRES_URL=jdbc:postgresql://postgres:5432/post_service
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - RABBITMQ_HOST=rabbitmq
@@ -125,20 +113,9 @@ services:
       - keycloak
       - rabbitmq
       - redis
-      - post-service-db
+      - postgres
       - service-discovery
     restart: unless-stopped
-
-  post-service-db:
-    image: postgres
-    container_name: post-service-db
-    environment:
-      - POSTGRES_DB=post_service
-      - POSTGRES_USER=${POST_SERVICE_DB_USER}
-      - POSTGRES_PASSWORD=${POST_SERVICE_DB_PASSWORD}
-    restart: unless-stopped
-    ports:
-      - "54322:5432"
 
   user-feed-service:
     build: ./user-feed-service
