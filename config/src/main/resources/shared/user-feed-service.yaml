@@ -1,7 +1,2 @@
-feign:
-  circuitbreaker:
-    enabled: true
-
-logging:
-  level:
-    com.mikhailkarpov.bloggingnetwork.feed.client.PostServiceClient: DEBUG
+CLIENT_ID: user-feed-service
+CLIENT_SECRET: a505c1d6-1a12-40b3-aecc-355304895b99

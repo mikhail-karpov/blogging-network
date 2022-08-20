@@ -9,18 +9,14 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
-  datasource:
-    url: ${POSTGRES_URL}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
 
   redis:
-    host: ${REDIS_HOST}
-    port: ${REDIS_PORT}
+    host: redis
+    port: 6379
 
   rabbitmq:
-    host: ${RABBITMQ_HOST}
-    port: ${RABBITMQ_PORT}
+    host: rabbitmq
+    port: 5672
 
   security:
     oauth2:
@@ -45,7 +41,15 @@ eureka:
     serviceUrl:
       defaultZone: http://service-discovery:8761/eureka/
 
+feign:
+  circuitbreaker:
+    enabled: true
+
 app:
   keycloak:
     serverUrl: http://keycloak:8080/auth
     realm: bloggingnetwork
+
+logging:
+  level:
+    com.mikhailkarpov: DEBUG

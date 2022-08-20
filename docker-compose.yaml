@@ -45,14 +45,14 @@ services:
     build: ./keycloak
     container_name: keycloak
     environment:
-      KEYCLOAK_USER: ${KEYCLOAK_USER}
-      KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
       DB_VENDOR: POSTGRES
       DB_ADDR: postgres
       DB_DATABASE: keycloak
       DB_SCHEMA: public
-      DB_USER: ${KEYCLOAK_DB_USER}
-      DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      DB_USER: keycloak
+      DB_PASSWORD: keycloak
     depends_on:
       - postgres
     restart: unless-stopped
@@ -77,15 +77,6 @@ services:
     container_name: user-service
     environment:
       CONFIG_URI: http://config:8888
-      KEYCLOAK_USER: ${KEYCLOAK_USER}
-      KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
-      POSTGRES_URL: jdbc:postgresql://postgres:5432/user_service
-      POSTGRES_USER: user_service
-      POSTGRES_PASSWORD: user_service
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
     depends_on:
       - config
       - postgres
@@ -99,15 +90,6 @@ services:
     container_name: post-service
     environment:
       CONFIG_URI: http://config:8888
-      CLIENT_ID: post-service
-      CLIENT_SECRET: 9ac2c424-117b-4f69-b853-24c7f2661535
-      POSTGRES_URL: jdbc:postgresql://postgres:5432/post_service
-      POSTGRES_USER: ${POST_SERVICE_DB_USER}
-      POSTGRES_PASSWORD: ${POST_SERVICE_DB_PASSWORD}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
     depends_on:
       - config
       - postgres
@@ -122,12 +104,6 @@ services:
     container_name: user-feed-service
     environment:
       CONFIG_URI: http://config:8888
-      CLIENT_ID: user-feed-service
-      CLIENT_SECRET: a505c1d6-1a12-40b3-aecc-355304895b99
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
     depends_on:
       - config
       - redis

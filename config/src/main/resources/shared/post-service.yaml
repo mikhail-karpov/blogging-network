@@ -1,7 +1,8 @@
-feign:
-  circuitbreaker:
-    enabled: true
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/post_service
+    username: post_service
+    password: post_service
 
-logging:
-  level:
-    com.mikhailkarpov.bloggingnetwork.posts.client.UserServiceClient: DEBUG
+CLIENT_ID: post-service
+CLIENT_SECRET: 9ac2c424-117b-4f69-b853-24c7f2661535

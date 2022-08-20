@@ -1,4 +1,10 @@
 app:
   keycloak:
-    adminUsername: ${KEYCLOAK_USER}
-    adminPassword: ${KEYCLOAK_PASSWORD}
+    adminUsername: admin
+    adminPassword: admin
+
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/user_service
+    username: user_service
+    password: user_service

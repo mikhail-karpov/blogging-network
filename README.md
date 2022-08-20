@@ -1,16 +1,16 @@
 # Blogging Network
 
-Blogging Network is a sample Microservice Architecture with 
+Blogging network is a sample microservice architecture with 
 following technologies and frameworks:
 
 - Java 8
 - Spring Boot
 - Spring Cloud
-- Spring Data JPA / PostgreSQL
-- Spring Security / OAuth2 / Keycloak
-- Spring AMQP
+- PostgreSQL
+- Keycloak
+- RabbitMQ
 - Redis
-- JUnit / Testcontainers / Spring Cloud Contract
+- Testcontainers
 - Docker
 - Maven
 
@@ -22,12 +22,6 @@ implemented:
 - User can follow another users
 - User can see posts created by users and comment their posts
 - User can see posts from users he is following (feed)
-
-## To-Do list
-
-- Contract tests (in progress)
-- Web client
-- Direct messaging
 
 ## How to test
 
@@ -44,16 +38,7 @@ mvn failsafe:integration-test
 Please make sure, your local machine is powerful enough to start 6 Spring Boot 
 applications, PostgreSQL, Keycloak, Redis and RabbitMQ. 
 
-Before you start, it is recommended to change environment variables and secrets
-in `.env` and  `/keycloak/bloggingnetwork-realm.json` files. 
-Build the artifacts with Maven, then build, create and start containers 
-with Docker. 
-
 ```
 mvn install -DskipTests
-docker compose build
-docker compose up
+docker compose up --build
 ```
-
-
-
