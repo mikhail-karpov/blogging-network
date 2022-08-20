@@ -4,6 +4,7 @@ import com.mikhailkarpov.users.config.AbstractIT;
 import com.mikhailkarpov.users.dto.UserAuthenticationRequest;
 import com.mikhailkarpov.users.dto.UserProfileDto;
 import com.mikhailkarpov.users.dto.UserRegistrationRequest;
+import com.mikhailkarpov.users.exception.ResourceAlreadyExistsException;
 import com.mikhailkarpov.users.util.DtoUtils;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.AccessTokenResponse;
@@ -12,11 +13,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlGroup;
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
-import javax.ws.rs.WebApplicationException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -58,7 +59,7 @@ class UserServiceIT extends AbstractIT {
         UserAuthenticationRequest request = new UserAuthenticationRequest(username, password);
 
         //then
-        assertThatThrownBy(() -> this.userService.authenticateUser(request)).isInstanceOf(WebApplicationException.class);
+        assertThatThrownBy(() -> this.userService.authenticateUser(request)).isInstanceOf(BadCredentialsException.class);
     }
 
     @Test
@@ -118,7 +119,7 @@ class UserServiceIT extends AbstractIT {
         //then
         this.userService.registerUser(request);
         assertThatThrownBy(() -> this.userService.registerUser(duplicateUsernameRequest))
-                .isInstanceOf(WebApplicationException.class);
+                .isInstanceOf(ResourceAlreadyExistsException.class);
 
         assertThat(this.userService.findUsersByUsernameLike(username, PageRequest.of(1, 5)).getTotalElements())
                 .isEqualTo(1L);
@@ -139,7 +140,7 @@ class UserServiceIT extends AbstractIT {
         this.userService.registerUser(request);
 
         assertThatThrownBy(() -> this.userService.registerUser(duplicateEmailRequest))
-                .isInstanceOf(WebApplicationException.class);
+                .isInstanceOf(ResourceAlreadyExistsException.class);
 
         assertThat(this.userService.findUsersByUsernameLike(username, PageRequest.of(1, 5)).getTotalElements())
                 .isEqualTo(1L);
