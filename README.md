@@ -42,7 +42,7 @@ mvn failsafe:integration-test
 ## How to run
 
 Please make sure, your local machine is powerful enough to start 6 Spring Boot 
-applications, 4 PostgreSQL instances, Keycloak, Redis and RabbitMQ. 
+applications, PostgreSQL, Keycloak, Redis and RabbitMQ. 
 
 Before you start, it is recommended to change environment variables and secrets
 in `.env` and  `/keycloak/bloggingnetwork-realm.json` files. 
