@@ -1,8 +1,9 @@
 package com.mikhailkarpov.users.api;
 
-import com.mikhailkarpov.users.dto.UserAuthenticationRequest;
+import com.mikhailkarpov.users.dto.AccessTokenDto;
+import com.mikhailkarpov.users.dto.SignInRequest;
 import com.mikhailkarpov.users.dto.UserProfileDto;
-import com.mikhailkarpov.users.dto.UserRegistrationRequest;
+import com.mikhailkarpov.users.dto.SignUpRequest;
 import com.mikhailkarpov.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.representations.AccessTokenResponse;
@@ -24,20 +25,20 @@ public class AccountController {
 
     private final UserService userService;
 
-    @PostMapping("/account/registration")
-    public ResponseEntity<UserProfileDto> create(@Valid @RequestBody UserRegistrationRequest request,
+    @PostMapping("/account/signUp")
+    public ResponseEntity<UserProfileDto> signUp(@Valid @RequestBody SignUpRequest request,
                                                  UriComponentsBuilder uriComponentsBuilder) {
 
-        UserProfileDto profile = userService.registerUser(request);
+        UserProfileDto profile = userService.signUp(request);
         URI location = uriComponentsBuilder.path("/account/profile").build().toUri();
 
         return ResponseEntity.created(location).body(profile);
     }
 
-    @PostMapping("/account/login")
-    public AccessTokenResponse login(@Valid @RequestBody UserAuthenticationRequest request) {
+    @PostMapping("/account/signIn")
+    public AccessTokenDto signIn(@Valid @RequestBody SignInRequest request) {
 
-        return userService.authenticateUser(request);
+        return userService.signIn(request);
     }
 
     @GetMapping("/account/profile")

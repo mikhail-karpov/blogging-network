@@ -79,9 +79,9 @@ services:
       CONFIG_URI: http://config:8888
     depends_on:
       - config
+      - service-discovery
       - postgres
       - keycloak
-      - redis
       - rabbitmq
     restart: unless-stopped
 

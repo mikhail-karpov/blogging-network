@@ -4,6 +4,18 @@ app:
     adminPassword: admin
 
 spring:
+  cloud:
+    stream:
+      bindings:
+        userFollowing-out-0:
+          destination: users.following
+      rabbit:
+        binder:
+          connection-name-prefix: ${spring.application.name}
+        bindings:
+          userFollowing-out-0:
+            producer:
+              routing-key-expression: headers['type']
   datasource:
     url: jdbc:postgresql://postgres:5432/user_service
     username: user_service

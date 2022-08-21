@@ -1,12 +1,20 @@
+debug: true
+
 spring:
   cloud:
     config:
       enabled: false
-
-  cache:
-    prefix: user-service
-    expirations:
-      users: 60
+    stream:
+      bindings:
+        userFollowing-out-0:
+          destination: users.following
+      rabbit:
+        binder:
+          connection-name-prefix: ${spring.application.name}
+        bindings:
+          userFollowing-out-0:
+            producer:
+              routing-key-expression: headers['type']
 
   jpa:
     hibernate:
