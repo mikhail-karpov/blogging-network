@@ -1,7 +1,6 @@
-package com.mikhailkarpov.bloggingnetwork.feed.messaging;
+package com.mikhailkarpov.bloggingnetwork.feed.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class FollowingMessage {
+public class FollowingEvent {
 
     public enum Status {
         FOLLOWED, UNFOLLOWED

@@ -19,7 +19,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-class UserFeedServiceIT extends AbstractIT {
+class UserFeedServiceTest extends AbstractIT {
 
     @MockBean
     private PostServiceClient postServiceClient;

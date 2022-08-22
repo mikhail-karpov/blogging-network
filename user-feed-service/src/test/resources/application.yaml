@@ -2,7 +2,28 @@ spring:
   cloud:
     config:
       enabled: false
-
+    function:
+      definition: followingEventConsumer;postEventConsumer
+    stream:
+      bindings:
+        followingEventConsumer-in-0:
+          destination: users.following
+          group: feed
+        postEventConsumer-in-0:
+          destination: posts
+          group: feed
+      rabbit:
+        bindings:
+          followingEventConsumer-in-0:
+            consumer:
+              bindingRoutingKey: FOLLOWED,UNFOLLOWED
+              bindingRoutingKeyDelimiter: ','
+          postEventConsumer-in-0:
+            consumer:
+              bindingRoutingKey: CREATED,DELETED
+              bindingRoutingKeyDelimiter: ','
+        binder:
+          connection-name-prefix: ${spring.application.name}
   security:
     oauth2:
       client:

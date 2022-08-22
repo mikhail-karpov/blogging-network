@@ -1,5 +1,6 @@
 package com.mikhailkarpov.bloggingnetwork.feed.model;
 
+import lombok.NonNull;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Reference;
 import org.springframework.data.redis.core.RedisHash;
@@ -10,12 +11,12 @@ import java.util.List;
 public class UserFeed {
 
     @Id
-    private final String userId;
+    private String userId;
 
     @Reference
-    private final List<Post> posts;
+    private List<Post> posts;
 
-    public UserFeed(String userId, List<Post> posts) {
+    public UserFeed(@NonNull String userId, @NonNull List<Post> posts) {
         this.userId = userId;
         this.posts = posts;
     }
