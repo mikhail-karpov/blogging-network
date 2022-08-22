@@ -1,2 +1,27 @@
+spring:
+  cloud:
+    function:
+      definition: followingEventConsumer;postEventConsumer
+      stream:
+        bindings:
+          followingEventConsumer-in-0:
+            destination: users.following
+            group: feed
+          postEventConsumer-in-0:
+            destination: posts
+            group: feed
+        rabbit:
+          bindings:
+            followingEventConsumer-in-0:
+              consumer:
+                bindingRoutingKey: FOLLOWED,UNFOLLOWED
+                bindingRoutingKeyDelimiter: ','
+            postEventConsumer-in-0:
+              consumer:
+                bindingRoutingKey: CREATED,DELETED
+                bindingRoutingKeyDelimiter: ','
+          binder:
+            connection-name-prefix: ${spring.application.name}
+
 CLIENT_ID: user-feed-service
 CLIENT_SECRET: a505c1d6-1a12-40b3-aecc-355304895b99

@@ -13,13 +13,13 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
-class UserFeedServiceIT extends AbstractIT {
+class UserFeedServiceTest extends AbstractIT {
 
     @MockBean
     private PostServiceClient postServiceClient;
@@ -44,31 +44,25 @@ class UserFeedServiceIT extends AbstractIT {
     @Test
     void contextLoads() {
         //given
-        Mockito.when(this.postServiceClient.getPostById("post-1")).thenReturn(Optional.of(post1));
-        Mockito.when(this.postServiceClient.getPostById("post-2")).thenReturn(Optional.of(post2));
+        Mockito.when(postServiceClient.getPostById("post-1")).thenReturn(Optional.of(post1));
+        Mockito.when(postServiceClient.getPostById("post-2")).thenReturn(Optional.of(post2));
 
         //when
-        this.userFeedService.startFollowing("follower", "user-1");
-        this.userFeedService.startFollowing("follower", "user-2");
-        this.userFeedService.addPost("user-1", "post-1");
-        this.userFeedService.addPost("user-2", "post-2");
-
-        assertTrue(this.userFeedService.getUserFeed("follower", 0, 2).isEmpty());
-
-        this.userFeedService.generateUserFeed("follower");
-        List<Post> feed = this.userFeedService.getUserFeed("follower", 1, 1);
+        userFeedService.startFollowing("follower", "user-1");
+        userFeedService.startFollowing("follower", "user-2");
+        userFeedService.addPost("user-1", "post-1");
+        userFeedService.addPost("user-2", "post-2");
 
         //then
-        assertIterableEquals(Collections.singletonList(post1), feed);
+        assertIterableEquals(Collections.singletonList(post1), userFeedService.getUserFeed("follower", 1, 1));
+        assertIterableEquals(Collections.singletonList(post2), userFeedService.getUserFeed("follower", 0, 1));
 
         //and when
-        this.userFeedService.stopFollowing("follower", "user-2");
-        this.userFeedService.addPost("user-2", "post-3");
-        this.userFeedService.removePost("user-1", "post-1");
-        this.userFeedService.generateUserFeed("follower");
-        feed = this.userFeedService.getUserFeed("follower", 0, 10);
+        userFeedService.stopFollowing("follower", "user-2");
+        userFeedService.addPost("user-2", "post-3");
+        userFeedService.removePost("user-1", "post-1");
 
         //then
-        assertIterableEquals(Arrays.asList(post2, post1), feed);
+        assertIterableEquals(Arrays.asList(post2), userFeedService.getUserFeed("follower", 0, 10));
     }
 }

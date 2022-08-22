@@ -20,10 +20,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ContextConfiguration(classes = JwtDecoderTestConfig.class)
@@ -39,30 +39,6 @@ class UserFeedControllerTest {
 
     @Autowired
     private JacksonTester<List<Post>> postTester;
-
-    @Test
-    void whenGenerateUserFeed_thenAccepted() throws Exception {
-        //given
-        String userId = "user-id";
-
-        //when
-        this.mockMvc.perform(post("/feed")
-                        .with(jwt().jwt(jwt -> jwt.subject(userId))))
-                .andExpect(status().isAccepted());
-
-        //then
-        verify(this.userFeedService).generateUserFeed(userId);
-    }
-
-    @Test
-    void givenNoJwt_whenGenerateFeed_thenUnauthorized() throws Exception {
-        //when
-        this.mockMvc.perform(post("/feed"))
-                .andExpect(status().isUnauthorized());
-
-        //then
-        verifyNoInteractions(this.userFeedService);
-    }
 
     @Test
     void givenFeed_whenGetUserFeed_thenOk() throws Exception {

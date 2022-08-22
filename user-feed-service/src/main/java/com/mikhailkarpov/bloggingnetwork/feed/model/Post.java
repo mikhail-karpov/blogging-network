@@ -1,45 +1,31 @@
 package com.mikhailkarpov.bloggingnetwork.feed.model;
 
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 
 import java.time.LocalDateTime;
 
-@RedisHash("post")
-@Getter
+@RedisHash(value = "post", timeToLive = 60L * 60 * 24 * 7)
+@Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Post {
 
     @Id
-    private final String id;
+    private String id;
 
-    private final String content;
+    private String content;
 
-    private final UserProfile user;
+    private UserProfile user;
 
-    private final LocalDateTime createdDate;
+    private LocalDateTime createdDate;
 
     @Builder
-    public Post(String id, String content, UserProfile user, LocalDateTime createdDate) {
+    private Post(String id, String content, UserProfile user, LocalDateTime createdDate) {
         this.id = id;
         this.content = content;
         this.user = user;
         this.createdDate = createdDate;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Post post = (Post) o;
-
-        return id.equals(post.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id.hashCode();
-    }
 }
