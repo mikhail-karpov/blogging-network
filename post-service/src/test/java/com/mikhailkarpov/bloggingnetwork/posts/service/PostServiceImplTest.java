@@ -4,10 +4,11 @@ import com.mikhailkarpov.bloggingnetwork.posts.config.PersistenceTestConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.PostDto;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
-import com.mikhailkarpov.bloggingnetwork.posts.messaging.EventStatus;
-import com.mikhailkarpov.bloggingnetwork.posts.messaging.PostEvent;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.notification.PostStatus;
+import com.mikhailkarpov.bloggingnetwork.posts.dto.notification.PostEvent;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.CommentRepository;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
+import com.mikhailkarpov.bloggingnetwork.posts.service.impl.PostServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -16,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -47,7 +47,7 @@ class PostServiceImplTest {
     private UserService userService;
 
     @MockBean
-    private ApplicationEventPublisher eventPublisher;
+    private NotificationService<PostEvent> notificationService;
 
     @Captor
     ArgumentCaptor<PostEvent> eventArgumentCaptor;
@@ -56,7 +56,7 @@ class PostServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        this.postService = new PostServiceImpl(this.postRepository, this.userService, this.eventPublisher);
+        this.postService = new PostServiceImpl(this.postRepository, this.userService, this.notificationService);
     }
 
     @Test
@@ -81,13 +81,13 @@ class PostServiceImplTest {
         assertThat(postDto.getCreatedDate()).isBefore(Instant.now());
         assertThat(postDto.getUser()).isEqualTo(user);
 
-        verify(this.eventPublisher).publishEvent(this.eventArgumentCaptor.capture());
+        verify(this.notificationService).send(this.eventArgumentCaptor.capture());
 
         PostEvent event = this.eventArgumentCaptor.getValue();
         assertThat(event.getAuthorId()).isEqualTo(userId);
         assertThat(event.getPostId()).isEqualTo(postId);
         assertThat(event.getPostContent()).isEqualTo(postContent);
-        assertThat(event.getStatus()).isEqualTo(EventStatus.CREATED);
+        assertThat(event.getStatus()).isEqualTo(PostStatus.CREATED);
     }
 
     @Test
@@ -102,12 +102,12 @@ class PostServiceImplTest {
 
         //then
         assertThat(this.postService.findById(postId)).isEmpty();
-        verify(this.eventPublisher).publishEvent(this.eventArgumentCaptor.capture());
+        verify(this.notificationService).send(this.eventArgumentCaptor.capture());
 
         PostEvent event = this.eventArgumentCaptor.getValue();
         assertThat(event.getAuthorId()).isEqualTo("user-1");
         assertThat(event.getPostId()).isEqualTo(postId);
-        assertThat(event.getStatus()).isEqualTo(EventStatus.DELETED);
+        assertThat(event.getStatus()).isEqualTo(PostStatus.DELETED);
 
         PageRequest pageRequest = PageRequest.of(0, 3);
         assertThat(this.commentRepository.findAllByPostId(postId, pageRequest).getTotalElements()).isEqualTo(0L);
@@ -120,7 +120,7 @@ class PostServiceImplTest {
 
         //then
         assertThatThrownBy(() -> this.postService.deleteById(postId)).isInstanceOf(ResourceNotFoundException.class);
-        verifyNoInteractions(this.eventPublisher);
+        verifyNoInteractions(this.notificationService);
     }
 
     @Test

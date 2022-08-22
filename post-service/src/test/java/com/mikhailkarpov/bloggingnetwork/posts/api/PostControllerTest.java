@@ -38,7 +38,6 @@ import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PostController.class)
@@ -82,18 +81,14 @@ class PostControllerTest {
     @Test
     void givenRequest_whenCreatePost_thenCreated() throws Exception {
         //given
-        UUID postId = UUID.randomUUID();
         String userId = UUID.randomUUID().toString();
-
-        when(this.postService.createPost(userId, "post content")).thenReturn(postId);
 
         //when
         this.mockMvc.perform(post("/posts")
                         .with(jwt().jwt(jwt -> jwt.subject(userId)))
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreatePostRequest("post content"))))
-                .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "http://localhost/posts/" + postId));
+                .andExpect(status().isCreated());
 
         //then
         verify(this.postService).createPost(userId, "post content");

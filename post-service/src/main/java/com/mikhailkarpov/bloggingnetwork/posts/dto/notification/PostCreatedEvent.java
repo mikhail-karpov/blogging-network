@@ -1,4 +1,4 @@
-package com.mikhailkarpov.bloggingnetwork.posts.messaging;
+package com.mikhailkarpov.bloggingnetwork.posts.dto.notification;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -11,6 +11,6 @@ public class PostCreatedEvent extends PostEvent {
     public PostCreatedEvent(@JsonProperty("postId") UUID postId,
                             @JsonProperty("authorId") String authorId,
                             @JsonProperty("postContent") String postContent) {
-        super(postId, authorId, postContent, EventStatus.CREATED);
+        super(postId, authorId, postContent, PostStatus.CREATED);
     }
 }
