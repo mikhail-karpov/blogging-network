@@ -1,4 +1,4 @@
-package com.mikhailkarpov.bloggingnetwork.posts.service;
+package com.mikhailkarpov.bloggingnetwork.posts.service.impl;
 
 import com.mikhailkarpov.bloggingnetwork.posts.domain.Comment;
 import com.mikhailkarpov.bloggingnetwork.posts.domain.CommentProjection;
@@ -7,6 +7,8 @@ import com.mikhailkarpov.bloggingnetwork.posts.dto.CommentDto;
 import com.mikhailkarpov.bloggingnetwork.posts.excepition.ResourceNotFoundException;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.CommentRepository;
 import com.mikhailkarpov.bloggingnetwork.posts.repository.PostRepository;
+import com.mikhailkarpov.bloggingnetwork.posts.service.CommentService;
+import com.mikhailkarpov.bloggingnetwork.posts.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

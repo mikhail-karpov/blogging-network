@@ -14,7 +14,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
@@ -27,16 +26,13 @@ public class CommentController {
     private final CommentService commentService;
 
     @PostMapping("/posts/{postId}/comments")
-    public ResponseEntity<?> commentPost(@PathVariable UUID postId,
-                                         @Valid @RequestBody CreateCommentRequest request,
-                                         UriComponentsBuilder uriComponentsBuilder,
-                                         @AuthenticationPrincipal Jwt jwt) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public void commentPost(@PathVariable UUID postId,
+                            @Valid @RequestBody CreateCommentRequest request,
+                            @AuthenticationPrincipal Jwt jwt) {
 
         String userId = jwt.getSubject();
-        UUID commentId = this.commentService.createComment(postId, userId, request.getComment());
-
-        URI location = uriComponentsBuilder.path("/posts/{postId}/comments/{commentId}").build(postId, commentId);
-        return ResponseEntity.created(location).build();
+        this.commentService.createComment(postId, userId, request.getComment());
     }
 
     @GetMapping("/posts/{postId}/comments")

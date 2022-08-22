@@ -1,19 +1,24 @@
-package com.mikhailkarpov.bloggingnetwork.posts.messaging;
+package com.mikhailkarpov.bloggingnetwork.posts.dto.notification;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public abstract class PostEvent {
+public abstract class PostEvent implements Notification {
 
     private final UUID postId;
     private final String authorId;
     private final String postContent;
-    private final EventStatus status;
+    private final PostStatus status;
+
+    @Override
+    public final String getType() {
+        return status.name();
+    }
+
 }

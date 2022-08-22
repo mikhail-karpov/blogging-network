@@ -23,13 +23,11 @@ import java.util.Collections;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CommentController.class)
@@ -64,16 +62,13 @@ class CommentControllerTest {
         UUID postId = UUID.randomUUID();
         UUID commentId = UUID.randomUUID();
         String subject = "user-subject";
-        String expectedLocation = String.format("http://localhost/posts/%s/comments/%s", postId, commentId);
-        when(this.commentService.createComment(any(), any(), any())).thenReturn(commentId);
 
         //when
         this.mockMvc.perform(post("/posts/{id}/comments", postId)
                         .with(jwt().jwt(jwt -> jwt.subject(subject)))
                         .contentType(APPLICATION_JSON)
                         .content("{\"comment\":\"post comment\"}"))
-                .andExpect(status().isCreated())
-                .andExpect(header().string("Location", expectedLocation));
+                .andExpect(status().isCreated());
 
         //then
         verify(this.commentService).createComment(postId, subject, "post comment");
