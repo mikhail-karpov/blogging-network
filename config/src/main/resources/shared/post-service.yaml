@@ -1,4 +1,20 @@
 spring:
+  cloud:
+    stream:
+      bindings:
+        postEvents-out-0:
+          destination: posts
+      rabbit:
+        bindings:
+          postEvents-out-0:
+            producer:
+              routing-key-expression: headers['type']
+        binder:
+          connection-name-prefix: ${spring.application.name}
+  cache:
+    prefix: post-service
+    expirations:
+      users: 60
   datasource:
     url: jdbc:postgresql://postgres:5432/post_service
     username: post_service

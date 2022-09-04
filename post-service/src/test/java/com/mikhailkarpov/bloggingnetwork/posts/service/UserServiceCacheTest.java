@@ -3,7 +3,7 @@ package com.mikhailkarpov.bloggingnetwork.posts.service;
 import com.mikhailkarpov.bloggingnetwork.posts.client.UserServiceClient;
 import com.mikhailkarpov.bloggingnetwork.posts.config.cache.CacheConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
-import org.junit.jupiter.api.Assertions;
+import com.mikhailkarpov.bloggingnetwork.posts.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.*;
         "spring.cache.expirations.users=60"
 })
 @Testcontainers
-public class UserServiceCacheIT {
+public class UserServiceCacheTest {
 
     @Container
     static GenericContainer REDIS = new GenericContainer("redis:latest").withExposedPorts(6379);

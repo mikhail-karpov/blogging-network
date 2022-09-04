@@ -28,16 +28,13 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping
-    public ResponseEntity<PostDto> createPost(@Valid @RequestBody CreatePostRequest request,
-                                              UriComponentsBuilder uriComponentsBuilder,
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createPost(@Valid @RequestBody CreatePostRequest request,
                                               @AuthenticationPrincipal Jwt jwt) {
 
         String userId = jwt.getSubject();
         String content = request.getContent();
-        UUID postId = this.postService.createPost(userId, content);
-
-        URI location = uriComponentsBuilder.path("/posts/{id}").build(postId.toString());
-        return ResponseEntity.created(location).build();
+        this.postService.createPost(userId, content);
     }
 
     @GetMapping("/{id}")

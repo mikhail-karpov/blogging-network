@@ -1,27 +1,14 @@
 package com.mikhailkarpov.bloggingnetwork.posts.client;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.mikhailkarpov.bloggingnetwork.posts.config.AbstractIT;
 import com.mikhailkarpov.bloggingnetwork.posts.config.MockUserServiceConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.cloud.client.DefaultServiceInstance;
-import org.springframework.cloud.client.discovery.simple.SimpleDiscoveryProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ImportResource;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 
@@ -34,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ContextConfiguration(classes = MockUserServiceConfig.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class UserServiceClientCircuitBreakerIT extends AbstractIT {
+class UserServiceClientCircuitBreakerTest extends AbstractIT {
 
     @Autowired
     private UserServiceClient userServiceClient;
