@@ -14,7 +14,5 @@ public interface UserFeedService {
 
     void removePost(String creatorId, String postId);
 
-    void generateUserFeed(String userId);
-
     List<Post> getUserFeed(String userId, int page, int size);
 }

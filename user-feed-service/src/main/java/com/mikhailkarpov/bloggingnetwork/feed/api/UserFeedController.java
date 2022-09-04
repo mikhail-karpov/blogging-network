@@ -16,14 +16,6 @@ public class UserFeedController {
 
     private final UserFeedService userFeedService;
 
-    @PostMapping("/feed")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public void generateUserFeed(@AuthenticationPrincipal Jwt jwt) {
-
-        String userId = jwt.getSubject();
-        this.userFeedService.generateUserFeed(userId);
-    }
-
     @GetMapping("/feed")
     public List<Post> getUserFeed(@AuthenticationPrincipal Jwt jwt,
                                   @RequestParam(required = false, defaultValue = "0") int page,
