@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = MockPostServiceConfig.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class PostServiceClientIT extends AbstractIT {
+class PostServiceClientTest extends AbstractIT {
 
     @Autowired
     private List<WireMockServer> services;
