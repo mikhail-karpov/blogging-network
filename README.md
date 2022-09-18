@@ -23,22 +23,12 @@ implemented:
 - User can see posts created by users and comment their posts
 - User can see posts from users he is following (feed)
 
-## How to test
-
-Add the contracts and generate the stubs, then run unit and integration tests as usual.
-
-```
-mvn install -DskipTests
-mvn test
-mvn failsafe:integration-test
-```
-
 ## How to run
 
 Please make sure, your local machine is powerful enough to start 6 Spring Boot 
 applications, PostgreSQL, Keycloak, Redis and RabbitMQ. 
 
 ```
-mvn install -DskipTests
+mvn package -DskipTests
 docker compose up --build
 ```

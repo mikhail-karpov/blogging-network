@@ -4,12 +4,9 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.mikhailkarpov.bloggingnetwork.posts.config.AbstractIT;
 import com.mikhailkarpov.bloggingnetwork.posts.config.MockUserServiceConfig;
 import com.mikhailkarpov.bloggingnetwork.posts.dto.UserProfileDto;
-import io.github.resilience4j.circuitbreaker.CircuitBreaker;
-import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 
 import javax.ws.rs.core.MediaType;
@@ -20,23 +17,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ContextConfiguration(classes = MockUserServiceConfig.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class UserServiceClientCircuitBreakerTest extends AbstractIT {
+class UserServiceClientTest extends AbstractIT {
 
     @Autowired
     private UserServiceClient userServiceClient;
 
     @Autowired
     private List<WireMockServer> servers;
-
-    @Autowired
-    private CircuitBreakerRegistry circuitBreakerRegistry;
-
-    @Test
-    void circuitBreakerShouldExists() {
-        CircuitBreaker circuitBreaker = this.circuitBreakerRegistry.circuitBreaker("user-service");
-        assertThat(circuitBreaker).isNotNull();
-    }
 
     @Test
     void givenOkResponse_whenGetUserById_thenPresent() {

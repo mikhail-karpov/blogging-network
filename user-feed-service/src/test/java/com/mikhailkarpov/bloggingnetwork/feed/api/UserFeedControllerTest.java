@@ -71,10 +71,10 @@ class UserFeedControllerTest {
     }
 
     @Test
-    void givenNoJwt_whenGetFeed_thenUnauthorized() throws Exception {
+    void givenNoJwt_whenGetFeed_thenRedirect() throws Exception {
         //when
         this.mockMvc.perform(get("/feed"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().is3xxRedirection());
 
         //then
         verifyNoInteractions(this.userFeedService);

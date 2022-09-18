@@ -5,10 +5,6 @@ spring:
         postEvents-out-0:
           destination: posts
       rabbit:
-        bindings:
-          postEvents-out-0:
-            producer:
-              routing-key-expression: headers['type']
         binder:
           connection-name-prefix: ${spring.application.name}
   cache:

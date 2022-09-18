@@ -14,3 +14,8 @@ spring:
           uri: lb://user-feed-service
           predicates:
             - Path=/feed/**
+
+eureka:
+  client:
+    registerWithEureka: false
+    fetchRegistry: false

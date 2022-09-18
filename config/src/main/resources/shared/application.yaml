@@ -2,8 +2,6 @@ spring:
   cache:
     type: redis
     prefix: ${spring.application.name}
-    expirations:
-      users: 60
 
   jpa:
     hibernate:
