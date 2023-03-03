@@ -1,7 +1,8 @@
 spring:
   application:
     name: config
-
+  main:
+    banner-mode: off
   cloud:
     config:
       server:
