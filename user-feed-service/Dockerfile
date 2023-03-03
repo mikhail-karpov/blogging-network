@@ -1,4 +1,4 @@
-FROM openjdk:8-alpine
+FROM eclipse-temurin:11
 MAINTAINER Mikhail Karpov <mikhailkarpov@hotmail.com>
 
 WORKDIR "/app"
