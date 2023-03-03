@@ -3,7 +3,7 @@
 Blogging network is a sample microservice architecture with 
 following technologies and frameworks:
 
-- Java 8
+- Java 11
 - Spring Boot
 - Spring Cloud
 - PostgreSQL
@@ -20,8 +20,8 @@ implemented:
 - User has a profile
 - User creates a new post (text only)
 - User can follow another users
-- User can see posts created by users and comment their posts
-- User can see posts from users he is following (feed)
+- User can see posts created by other users and comment their posts
+- User can see posts from users he is following (user feed)
 
 ## How to run
 
